@@ -7,13 +7,13 @@ import logging
 logging.basicConfig(format='%(asctime)s-%(name)s-%(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 logging.getLogger('clustering').setLevel(logging.DEBUG)
 
-from load_systems import load_orion_area, ORION_BB
+from load_systems import load_barnards_area, BARNARDS_BB
 
 log = logging.getLogger('clustering.systems_clustering')
 
 log.debug("Reading data")
 
-systems = load_orion_area()
+systems = load_barnards_area()
 log.debug("Clustering...")
 clusters = DBSCAN(eps=56, min_samples=120).fit(systems[['x','y','z']])
 labels = list(set(clusters.labels_))
@@ -33,11 +33,11 @@ pcd = o3d.geometry.PointCloud()
 pcd.points = o3d.utility.Vector3dVector(data[['x','y','z']].to_numpy())
 pcd.colors = o3d.utility.Vector3dVector(data[['r','g','b']].to_numpy())
 bb_pcd = o3d.geometry.PointCloud()
-bb_pcd.points = o3d.utility.Vector3dVector(ORION_BB)
+bb_pcd.points = o3d.utility.Vector3dVector(BARNARDS_BB)
 aabb = bb_pcd.get_axis_aligned_bounding_box()
 aabb.color = (1,0,0)
 
 log.debug("Writing to file")
-o3d.io.write_point_cloud('clusters.ply', pcd)
+o3d.io.write_point_cloud('barnards_clusters.ply', pcd)
 log.debug("Showing clusters")
 o3d.visualization.draw_geometries([pcd, aabb])

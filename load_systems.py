@@ -4,8 +4,8 @@ import logging
 log = logging.getLogger('clustering.load_systems')
 
 import open3d as o3d
-ORION_BB = [(-6000,-1000,-8000),(3500,1000,-1000)]
-ORION_AREA = None
+BARNARDS_BB = [(-6000,-1000,-8000),(3500,1000,-1000)]
+BARNARDS_AREA = None
 
 def get_systems_by_coordinates(min, max):
     log.debug(f"Reading data for bounding box {min}, {max}")
@@ -16,8 +16,8 @@ def get_system_by_name(name):
     return pd.read_hdf('systems.h5', '/table', where="system_name=name")
     
     
-def load_orion_area():
-    global ORION_AREA
-    if ORION_AREA is None :
-        ORION_AREA = get_systems_by_coordinates(ORION_BB[0], ORION_BB[1])
-    return ORION_AREA
+def load_barnards_area():
+    global BARNARDS_AREA
+    if BARNARDS_AREA is None :
+        BARNARDS_AREA = get_systems_by_coordinates(BARNARDS_BB[0], BARNARDS_BB[1])
+    return BARNARDS_AREA
