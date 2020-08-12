@@ -22,3 +22,5 @@ import open3d as o3d
 pcd = o3d.io.read_point_cloud("clusters.ply")
 o3d.visualization.draw_geometries([pcd])
 ```
+## Screenshots
+<img alt="Barnad's Loop Area top" src="//raw.githubusercontent.com/dolfandringa/elitedangerous_3d_mapping/master/screenshots/barnards%20loop%20area%20side.png" width="900px" />
