@@ -15,7 +15,10 @@ The scripts are python scripts. This is not meant to be a simple application to 
 
 You need to `pip3 install pandas tables numpy sklearn open3d matplotlib` to install all dependencies. Then you can run the scripts. I run them in IPython with for instance `%run systems_clustering.py`. You need the `systemsWithCoordinates.json` file from EDSM. You can then run the `get_systems.py` script to create an HDF5 table from that, and use `systems_clustering.py`to generate the clusters.
 
-If you just want to see the 3D result, you can download the `.ply` file and visualize it with any tool that supports it. In python you can do it with the `show_clusters.py` script.
+If you just want to see the 3D result, you can download the `.ply` file and visualize it with any tool that supports it. In python you can do it with the `show_clusters.py` script which just does the following:
 
-
+```
+import open3d as o3d
+pcd = o3d.io.read_point_cloud("clusters.ply")
+o3d.visualization.draw_geometries([pcd])
 ```
