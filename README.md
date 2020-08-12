@@ -23,4 +23,6 @@ pcd = o3d.io.read_point_cloud("clusters.ply")
 o3d.visualization.draw_geometries([pcd])
 ```
 ## Screenshots
-<img alt="Barnad's Loop Area top" src="https://raw.githubusercontent.com/dolfandringa/elitedangerous_3d_mapping/master/screenshots/barnards%20loop%20area%20side.png" width="900px" />
+<img alt="Barnad's Loop Area top" src="https://raw.githubusercontent.com/dolfandringa/elitedangerous_3d_mapping/master/screenshots/barnards%20loop%20area%20top.png" width="700px" />
+<img alt="Barnad's Loop Area top" src="https://raw.githubusercontent.com/dolfandringa/elitedangerous_3d_mapping/master/screenshots/barnards%20loop%20area%20side.png" width="700px" />
+<img alt="Barnad's Loop Area top" src="https://raw.githubusercontent.com/dolfandringa/elitedangerous_3d_mapping/master/screenshots/horsehead%20restricted%20sectors.png" width="700px" />
