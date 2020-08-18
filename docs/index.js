@@ -13,7 +13,7 @@ init();
 
 function init() {
 
-  camera = new THREE.PerspectiveCamera( 70, width / height, 1, 10000 );
+  camera = new THREE.PerspectiveCamera( 70, width / height, 1, 1000 );
   camera.position.set(0, 0, -1000);
   camera.lookAt(0, 0, -8000);
 
