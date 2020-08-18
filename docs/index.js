@@ -31,6 +31,7 @@ function init() {
     console.log("Loaded ply file");
     scene.add(geometry);
     console.log("Added geometry");
+    render();
   });
 
   renderer = new THREE.WebGLRenderer( { antialias: true } );
