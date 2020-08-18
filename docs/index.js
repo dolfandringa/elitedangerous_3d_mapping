@@ -15,9 +15,6 @@ function init() {
   camera = new THREE.PerspectiveCamera( 70, width / height, 1, 10000 );
   camera.position.set(0, 0, -1000);
   camera.lookAt(0, 0, -8000);
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.addEventListener( 'change', render );
-  window.addEventListener( 'resize', resize, false );
 
   scene = new THREE.Scene();
 
@@ -37,6 +34,10 @@ function init() {
 
   renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setSize( width, height );
+  
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.addEventListener( 'change', render );
+  window.addEventListener( 'resize', resize, false );
   document.body.appendChild( renderer.domElement );
 
 }
