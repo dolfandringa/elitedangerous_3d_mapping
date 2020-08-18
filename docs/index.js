@@ -1,22 +1,27 @@
 import * as THREE from 'https://unpkg.com/three/build/three.module.js';
 import { PLYLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PLYLoader.js';
+import { PCDLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PCDLoader.js';
 
-var camera, scene, renderer;
-var geometry, material, mesh;
+var camera, scene, renderer, controls;
+var geometry;
+let width = 0.9 * window.innerWidth;
+let height = 0.9 * window.innerHeight;
 
 init();
 //animate();
 
 function init() {
-  let width = 0.9 * window.innerWidth;
-  let height = 0.9 * window.innerHeight;
 
-  camera = new THREE.PerspectiveCamera( 70, width / height, 0.01, 10 );
-  camera.position.z = 1;
+  camera = new THREE.PerspectiveCamera( 70, width / height, 1, 10000 );
+  camera.position.set(0, 0, -1000);
+  camera.lookat(0, 0, -8000);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.addEventListener( 'change', render );
+  window.addEventListener( 'resize', resize, false );
 
   scene = new THREE.Scene();
 
-  let loader = new PLYLoader();
+  let loader = new PCDLoader();
 
   /*geometry = new THREE.BoxGeometry( 0.2, 0.2, 0.2 );
   material = new THREE.MeshNormalMaterial();
@@ -24,9 +29,9 @@ function init() {
   mesh = new THREE.Mesh( geometry, material );
   scene.add( mesh );*/
   console.log("Starting loading....");
-  loader.load('barnards_clusters.ply', function(geometry) {
+  loader.load('barnards_clusters.pcd', function(geometry) {
     console.log("Loaded ply file");
-    scene.add(new THREE.Mesh(geometry));
+    scene.add(geometry);
     console.log("Added mesh");
   });
 
@@ -36,12 +41,28 @@ function init() {
 
 }
 
+function resize() {
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	render();
+}
+
+
 function animate() {
 
   requestAnimationFrame( animate );
 
   mesh.rotation.x += 0.01;
   mesh.rotation.y += 0.02;
+
+  renderer.render( scene, camera );
+
+}
+
+function render() {
 
   renderer.render( scene, camera );
 
