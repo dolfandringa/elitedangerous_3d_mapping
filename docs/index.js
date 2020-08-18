@@ -7,13 +7,13 @@ init();
 animate();
 
 function init() {
-    width = 0.9*window.innerWidth;
-    height = 0.9*window.innerHeight;
+    let width = 0.9 * window.innerWidth;
+    let height = 0.9 * window.innerHeight;
 
-    camera = new THREE.PerspectiveCamera( 70, width / height, 0.01, 10 );
+    let camera = new THREE.PerspectiveCamera( 70, width / height, 0.01, 10 );
     camera.position.z = 1;
 
-    scene = new THREE.Scene();
+    let scene = new THREE.Scene();
 
     geometry = new THREE.BoxGeometry( 0.2, 0.2, 0.2 );
     material = new THREE.MeshNormalMaterial();
