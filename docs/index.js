@@ -14,8 +14,9 @@ init();
 function init() {
 
   camera = new THREE.PerspectiveCamera( 90, width / height, 1, 3000 );
-  camera.position.set(-36, -2300, -2200);
-  camera.lookAt(-36, -400, -2000);
+  camera.up.set(0,-1,0);
+  camera.position.set(645, -2600, -3600);
+  camera.lookAt(645, 0, -4600);
 
   scene = new THREE.Scene();
 
