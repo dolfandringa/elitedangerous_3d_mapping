@@ -1,4 +1,5 @@
 import * as THREE from 'https://unpkg.com/three/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three/examples/jsm/controls/OrbitControls.js';
 import { PLYLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PLYLoader.js';
 import { PCDLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PCDLoader.js';
 
@@ -35,7 +36,7 @@ function init() {
   renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setSize( width, height );
   
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls = new OrbitControls(camera, renderer.domElement);
   controls.addEventListener( 'change', render );
   window.addEventListener( 'resize', resize, false );
   document.body.appendChild( renderer.domElement );
