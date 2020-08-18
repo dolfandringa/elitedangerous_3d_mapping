@@ -69,7 +69,8 @@ function animate() {
 
 function render() {
 	console.log("Rendering");
-  console.log(camera.getWorldPosition());
+  console.log("Position: ",camera.getWorldPosition());
+  console.log("LookAt:",camera.lookAt);
   renderer.render( scene, camera );
 
 }
