@@ -32,7 +32,7 @@ function init() {
   loader.load('barnards_clusters.pcd', function(geometry) {
     console.log("Loaded ply file");
     scene.add(geometry);
-    console.log("Added mesh");
+    console.log("Added geometry");
   });
 
   renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -42,6 +42,7 @@ function init() {
 }
 
 function resize() {
+	console.log("resizing");
 
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
@@ -63,7 +64,7 @@ function animate() {
 }
 
 function render() {
-
+	console.log("Rendering");
   renderer.render( scene, camera );
 
 }
