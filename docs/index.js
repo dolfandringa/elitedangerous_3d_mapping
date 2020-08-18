@@ -14,7 +14,7 @@ function init() {
 
   camera = new THREE.PerspectiveCamera( 70, width / height, 1, 10000 );
   camera.position.set(0, 0, -1000);
-  camera.lookat(0, 0, -8000);
+  camera.lookAt(0, 0, -8000);
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.addEventListener( 'change', render );
   window.addEventListener( 'resize', resize, false );
