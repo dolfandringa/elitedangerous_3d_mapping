@@ -38,6 +38,6 @@ aabb = bb_pcd.get_axis_aligned_bounding_box()
 aabb.color = (1,0,0)
 
 log.debug("Writing to file")
-o3d.io.write_point_cloud('barnards_clusters.ply', pcd)
+o3d.io.write_point_cloud('docs/barnards_clusters.ply', pcd)
 log.debug("Showing clusters")
 o3d.visualization.draw_geometries([pcd, aabb])
