@@ -41,7 +41,7 @@ function init() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.addEventListener( 'change', render );
   window.addEventListener( 'resize', resize, false );
-  $('#map').appendChild( renderer.domElement );
+  $('#map').append( renderer.domElement );
 
 }
 
