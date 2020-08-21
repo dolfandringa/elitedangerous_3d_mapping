@@ -5,6 +5,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import pandas as pd
 import requests
+import matplotlib.pyplot as plt
 from functools import reduce
 import re
 import json
@@ -181,9 +182,20 @@ def load_data():
     return (systems, sites)
 
 def generate_layers(systems):
-    for group in species.keys():
+    pcd = o3d.geometry.PointCloud()
+    color = (0.0,0.0,0.0)
+    layer_systems = systems[['x','y','z']].to_numpy()
+    pcd.points = o3d.utility.Vector3dVector(layer_systems)
+    pcd.colors = o3d.utility.Vector3dVector([color for i in range(len(layer_systems))])
+    
+    num_groups = len(species.keys())
+    layers = [pcd]
+    for i, group in enumerate(species.keys()):
+        color = plt.cm.viridis(i/num_groups)
         columns = [k for k in species_column_names if k.startswith(group)]
         pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(systems[systems[columns].any(1)][['x','y','z']].to_numpy())
-        
-    
+        layer_systems = systems[systems[columns].any(1)][['x','y','z']].to_numpy()
+        pcd.points = o3d.utility.Vector3dVector(layer_systems)
+        pcd.colors = o3d.utility.Vector3dVector([color[:3] for i in range(len(layer_systems))])
+        layers.append(pcd)
+    return layers
