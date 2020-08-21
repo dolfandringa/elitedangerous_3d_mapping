@@ -189,7 +189,7 @@ def generate_layers(systems):
     pcd.colors = o3d.utility.Vector3dVector([color for i in range(len(layer_systems))])
     
     num_groups = len(species.keys())
-    layers = [pcd]
+    layers = {'all_systems': pcd}
     for i, group in enumerate(species.keys()):
         color = plt.cm.viridis(i/num_groups)
         columns = [k for k in species_column_names if k.startswith(group)]
@@ -197,5 +197,5 @@ def generate_layers(systems):
         layer_systems = systems[systems[columns].any(1)][['x','y','z']].to_numpy()
         pcd.points = o3d.utility.Vector3dVector(layer_systems)
         pcd.colors = o3d.utility.Vector3dVector([color[:3] for i in range(len(layer_systems))])
-        layers.append(pcd)
+        layers[group] = pcd
     return layers
