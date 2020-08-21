@@ -5,8 +5,8 @@ import { PCDLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PCDLoade
 
 var camera, scene, renderer, controls, loader;
 var geometry;
-let width = 0.9 * window.innerWidth;
-let height = 0.9 * window.innerHeight;
+let width = 0.6 * window.innerWidth;
+let height = 0.6 * window.innerHeight;
 
 init();
 //animate();
@@ -22,10 +22,12 @@ function load_layer(name) {
   clear_scene();
   loader.load(name+'.pcd', function(geometry) {
     console.log("Loaded pcd file");
+    console.log(geometry);
     geometry.computeBoundingSphere();
     let sphere=geometry.boundingSphere;
     camera_pos = sphere.center.copy();
     camera_pos.add(THREE.Vector(sphere.radius*1.5, sphere.radius*1.5, sphere.radius*1.5));
+    console.log("Moving camera to", camera_pos);
     camera.position.set(camera_pos);
     camera.lookAt(sphere.center);
     scene.add(geometry);
