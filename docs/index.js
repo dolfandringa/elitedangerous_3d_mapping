@@ -3,13 +3,31 @@ import { OrbitControls } from 'https://unpkg.com/three/examples/jsm/controls/Orb
 import { PLYLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PLYLoader.js';
 import { PCDLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PCDLoader.js';
 
-var camera, scene, renderer, controls;
+var camera, scene, renderer, controls, loader;
 var geometry;
 let width = 0.9 * window.innerWidth;
 let height = 0.9 * window.innerHeight;
 
 init();
 //animate();
+
+function clear_scene() {
+  while(scene.children.length > 0){ 
+    scene.remove(scene.children[0]); 
+  }
+}
+
+function load_layer(name) {
+  console.log('Loading layer ', name);
+  clear_scene();
+  loader.load(name+'.pcd', function(geometry) {
+    console.log("Loaded pcd file");
+    scene.add(geometry);
+    console.log("Added geometry");
+    render();
+  });
+  
+}
 
 function init() {
 
@@ -20,21 +38,10 @@ function init() {
 
   scene = new THREE.Scene();
 
-  let loader = new PCDLoader();
+  loader = new PCDLoader();
 
-  /*geometry = new THREE.BoxGeometry( 0.2, 0.2, 0.2 );
-  material = new THREE.MeshNormalMaterial();
-
-  mesh = new THREE.Mesh( geometry, material );
-  scene.add( mesh );*/
-  console.log("Starting loading....");
-  loader.load('barnards_clusters.pcd', function(geometry) {
-    console.log("Loaded ply file");
-    scene.add(geometry);
-    console.log("Added geometry");
-    render();
-  });
-
+  load_layer('all_systems')
+  
   renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setSize( width, height );
   

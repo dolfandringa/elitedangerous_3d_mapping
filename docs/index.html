@@ -18,7 +18,30 @@
 			<div class="fourteen wide column">
 				<div id="map"></div>
 			</div>
-			<div class="two wide column"></div>
-		</div>
+			<div class="two wide column">
+        <div class="ui form">
+          <div class="ui bulleted list">
+            <div class="item field">
+              <div class="ui radio checkbox">
+                <input type="radio" name="layer" value="all_systems" checked="checked" onchange="load_layer(this.value)">
+                <label>All systems</label>
+              </div>
+            </div>
+            <div class="item field">
+              <div class="ui radio checkbox">
+                <input type="radio" name="layer" value="mollusc" onchange="load_layer(this.value)">
+                <label>Molluscs</label>
+              </div>
+            </div>
+            <div class="item field">
+              <div class="ui radio checkbox">
+                <input type="radio" name="layer" value="ice_crystal" onchange="load_layer(this.value)">
+                <label>Ice crystals</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 	</body>
 </html>
