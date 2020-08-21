@@ -22,6 +22,12 @@ function load_layer(name) {
   clear_scene();
   loader.load(name+'.pcd', function(geometry) {
     console.log("Loaded pcd file");
+    geometry.computeBoundingSphere();
+    let sphere=geometry.boundingSphere;
+    camera_pos = sphere.center.copy();
+    camera_pos.add(THREE.Vector(sphere.radius*1.5, sphere.radius*1.5, sphere.radius*1.5));
+    camera.position.set(camera_pos);
+    camera.lookAt(sphere.center);
     scene.add(geometry);
     console.log("Added geometry");
     render();
@@ -31,10 +37,8 @@ function load_layer(name) {
 
 function init() {
 
-  camera = new THREE.PerspectiveCamera( 90, width / height, 1, 4000 );
+  camera = new THREE.PerspectiveCamera( 90, width / height, 1, 10000 );
   camera.up.set(0,-1,0);
-  camera.position.set(645, -1500, -3600);
-  camera.lookAt(645, 0, -3600);
 
   scene = new THREE.Scene();
 
