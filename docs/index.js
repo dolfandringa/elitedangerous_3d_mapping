@@ -5,8 +5,8 @@ import { PCDLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PCDLoade
 
 var camera, scene, renderer, controls, loader;
 var geometry;
-let width = 0.6 * window.innerWidth;
-let height = 0.6 * window.innerHeight;
+let width = 0.8 * window.innerWidth;
+let height = 0.8 * window.innerHeight;
 
 init();
 //animate();
@@ -17,21 +17,31 @@ function clear_scene() {
   }
 }
 
+function onLayerChange() {
+  load_layer(this.value);
+}
+
 function load_layer(name) {
   console.log('Loading layer ', name);
-  clear_scene();
-  loader.load(name+'.pcd', function(geometry) {
+  //clear_scene();
+  loader.load(name+'.pcd', function(points) {
     console.log("Loaded pcd file");
-    console.log(geometry);
-    geometry.geometry.computeBoundingSphere();
-    let sphere=geometry.geometry.boundingSphere;
-    camera_pos = sphere.center.copy();
-    camera_pos.add(THREE.Vector(sphere.radius*1.5, sphere.radius*1.5, sphere.radius*1.5));
+    
+    points.material.size *= 1000;
+    points.material.needsUpdate = true;
+    console.log("Points:", points);
+    scene.add(points);
+    
+    points.geometry.computeBoundingBox();
+    let bb = points.geometry.boundingBox
+    console.log("Bounding Box", bb);
+    let camera_pos = bb.min;
     console.log("Moving camera to", camera_pos);
-    camera.position.set(camera_pos);
-    camera.lookAt(sphere.center);
-    scene.add(geometry);
-    console.log("Added geometry");
+    camera.position.set(camera_pos.x, camera_pos.y, camera_pos.z);
+    camera.lookAt(bb.max);
+    camera.updateMatrixWorld();
+    
+    console.log("Added points");
     render();
   });
   
@@ -39,10 +49,13 @@ function load_layer(name) {
 
 function init() {
 
-  camera = new THREE.PerspectiveCamera( 90, width / height, 1, 10000 );
+  camera = new THREE.PerspectiveCamera( 40, width / height, 1, 10000 );
   camera.up.set(0,-1,0);
+  //camera.position.set(14531,500,3524);
+  //camera.lookAt(new THREE.Vector3(14636,0,3459));
 
   scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xffffff);
 
   loader = new PCDLoader();
 
@@ -55,6 +68,7 @@ function init() {
   controls.addEventListener( 'change', render );
   window.addEventListener( 'resize', resize, false );
   $('#map').append( renderer.domElement );
+  $('input[name=layer]').change(onLayerChange);
 
 }
 
@@ -83,7 +97,6 @@ function animate() {
 function render() {
 	console.log("Rendering");
   console.log("Position: ",camera.getWorldPosition());
-  console.log("LookAt:",camera.lookAt);
+  console.log("Camera", camera);
   renderer.render( scene, camera );
-
 }
