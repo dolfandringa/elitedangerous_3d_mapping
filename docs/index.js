@@ -23,8 +23,8 @@ function load_layer(name) {
   loader.load(name+'.pcd', function(geometry) {
     console.log("Loaded pcd file");
     console.log(geometry);
-    geometry.computeBoundingSphere();
-    let sphere=geometry.boundingSphere;
+    geometry.geometry.computeBoundingSphere();
+    let sphere=geometry.geometry.boundingSphere;
     camera_pos = sphere.center.copy();
     camera_pos.add(THREE.Vector(sphere.radius*1.5, sphere.radius*1.5, sphere.radius*1.5));
     console.log("Moving camera to", camera_pos);
