@@ -184,7 +184,7 @@ def load_data():
 def generate_layers(systems):
     pcd = o3d.geometry.PointCloud()
     color = (0.0,0.0,0.0)
-    layer_systems = systems[['x','y','z']].to_numpy()
+    layer_systems = systems[:['x','y','z']].to_numpy()
     pcd.points = o3d.utility.Vector3dVector(layer_systems)
     pcd.colors = o3d.utility.Vector3dVector([color for i in range(len(layer_systems))])
     
