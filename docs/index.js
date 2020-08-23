@@ -101,7 +101,7 @@ function init() {
   
   controls = new TrackballControls(camera, renderer.domElement);
   controls.rotateSpeed = 0.1;
-  controls.zoomSpeed = 0.1;
+  controls.zoomSpeed = 0.02;
   controls.panSpeed = 0.1;
   controls.keys = [ 65, 83, 68 ];
   
@@ -144,6 +144,7 @@ function animate() {
 
 function render() {
   raycaster.setFromCamera( mouse, camera );
+  //console.log("children: ", scene.children);
   let intersects = raycaster.intersectObjects( scene.children );
   if(intersects.length > 0){
     console.log("Intersects: ", intersects);
@@ -152,6 +153,7 @@ function render() {
   for ( var i = 0; i < intersects.length; i++ ) {
     console.log("Intersecting point", intersects[i]);
 		intersects[ i ].object.material.color.set( 0xff0000 );
+    intersects[ i ].object.material.colorNeedsUpdate = true;
 	}
   
   renderer.render( scene, camera );
