@@ -64,14 +64,34 @@ function load_layer(name, update_camera=false) {
       let bb = points.geometry.boundingBox
       console.log("Bounding Box", bb);
       
-      //let camera_pos = new THREE.Vector3((bb.max.x - bb.min.x)/2, (bb.max.y - bb.min.y)/2, bb.min.z);
-      let camera_pos = new THREE.Vector3(bb.max.x, bb.max.y, bb.max.z);
+      // Set the camera half the y size of the bounding box above it, but with x and z in the middle of the bb.
+      let camera_pos = new THREE.Vector3((bb.max.x - bb.min.x)/2+bb.min.x, (bb.max.y - bb.min.y)/2+bb.max.y, (bb.max.z - bb.min.z)/2+bb.min.z);
       console.log("Moving camera to", camera_pos);
-      let camera_lookat = new THREE.Vector3(bb.min.x, bb.min.y, bb.min.z);
+      
+      //Set the lookAt parameter to the middle of the bounding box.
+      let camera_lookat = new THREE.Vector3((bb.max.x - bb.min.x)/2+bb.min.x,(bb.max.y - bb.min.y)/2+bb.min.y, (bb.max.z - bb.min.z)/2+bb.min.z);
+      let controls_target = camera_lookat;
+      
       console.log("Looking at", camera_lookat);
       camera.position.set(camera_pos.x, camera_pos.y, camera_pos.z);
       camera.lookAt(camera_lookat.x, camera_lookat.y, camera_lookat.z);
+      controls.target.set(controls_target.x, controls_target.y, controls_target.z);
       camera.updateMatrixWorld();
+      
+      /*
+      //Add the camera_lookat and camera_pos as points in there for debugging.
+      let ref_geom = new THREE.BufferGeometry();
+      let ref_colors = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+      let ref_points_array = [camera_pos.x, camera_pos.y, camera_pos.z, camera_lookat.x, camera_lookat.y, camera_lookat.z];
+      ref_geom.setAttribute('position', new THREE.Float32BufferAttribute(ref_points_array, 3));
+      ref_geom.setAttribute('color', new THREE.Float32BufferAttribute(ref_colors, 3));
+      ref_geom.computeBoundingSphere();
+      let points_material = new THREE.PointsMaterial({ size: 100, vertexColors: true});
+      let ref_points = new THREE.Points(ref_geom, points_material);
+      console.log("Reference points:", ref_points);
+      scene.add(ref_points);
+      */
+
     }
     
     console.log("Added points");
@@ -99,13 +119,13 @@ function init() {
   camera = new THREE.PerspectiveCamera( 90, width / height, 1, 100000 );
   //camera.up.set(0,-1,0);
   
-  controls = new TrackballControls(camera, renderer.domElement);
-  controls.rotateSpeed = 0.1;
-  controls.zoomSpeed = 0.02;
-  controls.panSpeed = 0.1;
-  controls.keys = [ 65, 83, 68 ];
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.autoRotate = false;
+  controls.screenSpacePanning = true;
+  controls.enableDamping = true;
   
-  controls.addEventListener( 'change', onChangeCamera );
+  
+  controls.addEventListener('change', onChangeCamera );
   window.addEventListener( 'mousemove', onMouseMove, false );
   window.addEventListener( 'resize', resize, false );
   render();
@@ -143,6 +163,8 @@ function animate() {
 }
 
 function render() {
+  
+  /*
   raycaster.setFromCamera( mouse, camera );
   //console.log("children: ", scene.children);
   let intersects = raycaster.intersectObjects( scene.children );
@@ -155,6 +177,8 @@ function render() {
 		intersects[ i ].object.material.color.set( 0xff0000 );
     intersects[ i ].object.material.colorNeedsUpdate = true;
 	}
+  */
+  
   
   renderer.render( scene, camera );
 }
