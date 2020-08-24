@@ -38,8 +38,15 @@ function onMouseMove( event ) {
   mouse.x = ( event.clientX / width ) * 2 - 1;
 	mouse.y = - ( event.clientY / height ) * 2 + 1;
   */
-  mouse.x = ( event.clientX / width ) * 2 - 1;
-	mouse.y = - ( event.clientY / height ) * 2 + 1;
+  //mouse.x = ( event.clientX / width ) * 2 - 1;
+	//mouse.y = - ( event.clientY / height ) * 2 + 1;
+  let canvasBounds = renderer.getContext().canvas.getBoundingClientRect();
+  mouse = new THREE.Vector2();
+  mouse.x = ( ( event.clientX - canvasBounds.left ) / ( canvasBounds.right - canvasBounds.left ) ) * 2 - 1;
+  mouse.y = - ( ( event.clientY - canvasBounds.top ) / ( canvasBounds.bottom - canvasBounds.top) ) * 2 + 1;
+  //let vec = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+  //console.log(vec.unproject(camera));
+  //console.log(vec.sub( camera.position ).normalize());
 
 }
 
@@ -48,6 +55,7 @@ function load_layer(name, update_camera=false) {
   clear_scene();
   geom_group = new THREE.Group();
   loader.load(name+'.pcd', function(points) {
+    points.layers.enable(0);
     console.log("Loaded pcd file");
     var sprite = new THREE.TextureLoader().load( 'images/circle.png' );
     
@@ -117,6 +125,10 @@ function load_layer(name, update_camera=false) {
   
 }
 
+function updateGrid(){
+  gridHelper.position.set(controls.target.x, controls.target.y, controls.target.z);
+}
+
 function init() {
   width = $("#map").width();
   height = $("#map").height();
@@ -162,7 +174,7 @@ function init() {
 }
 
 function onChangeCamera() {
-  gridHelper.position.set(controls.target.x, controls.target.y, controls.target.z);
+  updateGrid();
   //render();
 
 }
@@ -194,6 +206,7 @@ function render() {
   iRay++;
   if(iRay>100) {
     console.log("Ray:",raycaster.ray);
+    console.log("Mouse:",mouse);
     iRay=0;
   }
   
