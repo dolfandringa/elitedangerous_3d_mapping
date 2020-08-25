@@ -32,16 +32,10 @@ function onLayerChange() {
 function onMouseMove( event ) {
 
 	// calculate mouse position in normalized device coordinates
-	// (-1 to +1) for both components
 
-  //mouse.x = ( event.clientX / width ) * 2 - 1;
-	//mouse.y = - ( event.clientY / height ) * 2 + 1;
   let canvasBounds = renderer.getContext().canvas.getBoundingClientRect();
   mouse.x = ( ( event.clientX - canvasBounds.left ) / ( canvasBounds.right - canvasBounds.left ) ) * 2 - 1;
   mouse.y = - ( ( event.clientY - canvasBounds.top ) / ( canvasBounds.bottom - canvasBounds.top) ) * 2 + 1;
-  //let vec = new THREE.Vector3(mouse.x, mouse.y, 0.5);
-  //console.log(vec.unproject(camera));
-  //console.log(vec.sub( camera.position ).normalize());
 
 }
 
@@ -53,8 +47,6 @@ function load_layer(name, update_camera=false) {
     points.layers.set(0);
     console.log("Loaded pcd file");
     var sprite = new THREE.TextureLoader().load( 'images/circle.png' );
-    
-    console.log("Material:", points.material);
     
     let num_points = points.geometry.attributes.position.count;
     let colors = [];
@@ -72,7 +64,6 @@ function load_layer(name, update_camera=false) {
     points.material.alphaTest = 0.8;
     points.material.sizeAttenuation = false;
     points.material.needsUpdate = true;
-    console.log("Points:", points);
     system_geom = points;
     geom_group.add(points);
     scene.add(geom_group);
@@ -80,11 +71,9 @@ function load_layer(name, update_camera=false) {
     points.geometry.computeBoundingBox();
     if(update_camera){
       let bb = points.geometry.boundingBox
-      console.log("Bounding Box", bb);
       
       // Set the camera half the y size of the bounding box above it, but with x and z in the middle of the bb.
       let camera_pos = new THREE.Vector3((bb.max.x - bb.min.x)/2+bb.min.x, (bb.max.y - bb.min.y)/2+bb.max.y, (bb.max.z - bb.min.z)/2+bb.min.z);
-      console.log("Moving camera to", camera_pos);
       
       //Set the lookAt parameter to the middle of the bounding box.
       let camera_lookat = new THREE.Vector3((bb.max.x - bb.min.x)/2+bb.min.x,(bb.max.y - bb.min.y)/2+bb.min.y, (bb.max.z - bb.min.z)/2+bb.min.z);
@@ -94,7 +83,6 @@ function load_layer(name, update_camera=false) {
       
       gridHelper.scale.set(gridSize, gridSize, gridSize);
       
-      console.log("Looking at", camera_lookat);
       camera.position.set(camera_pos.x, camera_pos.y, camera_pos.z);
       camera.lookAt(camera_lookat.x, camera_lookat.y, camera_lookat.z);
       controls.target.set(controls_target.x, controls_target.y, controls_target.z);
@@ -130,9 +118,6 @@ function updateGrid(){
 function init() {
   width = $("#map").width()*0.99;
   height = $("#map").height()*0.99;
-  //width = window.innerWidth;
-  //height = window.innerHeight;
-  console.log('size:', width, height);
   
   raycaster = new THREE.Raycaster();
   raycaster.layers.set(0);
@@ -200,13 +185,7 @@ function animate() {
 function render() {
   camera.updateMatrixWorld();
   raycaster.setFromCamera( mouse, camera );
-  iRay++;
-  if(iRay>100) {
-    console.log("Ray:",raycaster.ray);
-    console.log("Mouse:",mouse);
-    iRay=0;
-  }
-  
+
   if(system_geom != null) {
     let intersects = raycaster.intersectObject( system_geom );
     if(intersects.length > 0){
