@@ -3,6 +3,7 @@ import { OrbitControls, MapControls } from 'https://unpkg.com/three/examples/jsm
 import { TrackballControls  } from 'https://unpkg.com/three/examples/jsm/controls/TrackballControls.js';
 import { PLYLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PLYLoader.js';
 import { PCDLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PCDLoader.js';
+import { openDB, deleteDB, wrap, unwrap } from 'https://unpkg.com/idb?module';
 
 var camera, scene, renderer, controls, loader, geometry, mouse, raycaster, geom_group, gridHelper, INTERSECTED, system_geom;
 
@@ -111,11 +112,21 @@ function load_layer(name, update_camera=false) {
   
 }
 
+async function syncdb(table) {
+  //https://github.com/jakearchibald/idb#article-store
+  const res = await fetch(table+".json")
+  let last_modified = new Date(res.headers.get("Last-Modified"));
+  const db = await openDB('babana_nebula');
+  const import_date = new Date(await db.get(table, 'importDate'));
+  
+}
+
 function updateGrid(){
   gridHelper.position.set(controls.target.x, controls.target.y, controls.target.z);
 }
 
 function init() {
+  //syncdb('all_systems');
   width = $("#map").width()*0.99;
   height = $("#map").height()*0.99;
   
@@ -189,7 +200,6 @@ function render() {
   if(system_geom != null) {
     let intersects = raycaster.intersectObject( system_geom );
     if(intersects.length > 0){
-      console.log("Intersects: ", intersects);
       if(INTERSECTED != intersects[0].index) {
         let attributes = system_geom.geometry.attributes;
         attributes.size.array[ INTERSECTED ] = 10;
