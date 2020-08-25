@@ -186,6 +186,10 @@ function resize() {
 	render();
 }
 
+function setInfo(s) {
+  $("#system_info").html(`<h3 class="ui header">Coordinates</h3><p>x: ${s.x}</p><p>y: ${s.y}</p><p>z: ${s.z}</p>`);
+}
+
 
 function animate() {
   requestAnimationFrame( animate );
@@ -213,6 +217,10 @@ function render() {
         attributes.color.array[INTERSECTED*3+2] = 1.0;
         attributes.color.needsUpdate = true;
         attributes.size.needsUpdate = true;
+        let x = attributes.position.array[INTERSECTED*3];
+        let y = attributes.position.array[INTERSECTED*3+1];
+        let z = attributes.position.array[INTERSECTED*3+2];
+        setInfo({x,y,z});
       }
     }
     
