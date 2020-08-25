@@ -8,10 +8,12 @@ import requests
 import matplotlib.pyplot as plt
 from functools import reduce
 import re
+import numpy as np
 import json
 import logging
 import open3d as o3d
 from fuzzywuzzy import process
+import json
 
 logging.basicConfig(format='%(asctime)s-%(name)s: %(message)s', level=logging.ERROR, datefmt='%Y-%m-%d %H:%M:%S')
 logging.getLogger('nsp_mapping').setLevel(logging.DEBUG)
@@ -164,15 +166,30 @@ def read_gsheet():
     return (systems, sites)
     
 def calculate_columns(systems, sites):
-    for col in ['mollusc', 'lagrange_cloud', 'ice_crystal', 'metallic_crystal', 'silicate_crystal','solid_mineral']:
+    systems = systems.copy()
+    sites = sites.copy()
+    for col in species.keys():
         for sp in species[col]:
             sites[f"{col}_{sp.lower().replace(', ','_')}"] = sites.apply(lambda row: row[col] is not None and sp in get_matches(row[col], species[col]), axis=1)
-    systems = systems.join(sites[['system_name']+species_column_names].groupby(by=['system_name']).max())
+    agg_columns = dict([(v, np.max) for v in species_column_names])
+    agg_columns['added_by'] = lambda x: x.iloc[0]
+    systems = systems.join(sites[['system_name', 'added_by']+species_column_names].groupby(by=['system_name']).agg(agg_columns))
+    for group in species.keys():
+        columns = [k for k in species_column_names if k.startswith(group)]
+        systems[group] = systems[columns].any(1)
     return systems, sites
 
 def save_data(systems, sites):
     systems.to_hdf('banana_nebula_nsp.h5', 'systems', format='table')
     sites.to_hdf('banana_nebula_nsp.h5', 'sites', format='table')
+
+
+def save_layers(layers, tables):
+    for k, v in layers.items():
+        o3d.io.write_point_cloud(f'docs/{k}.pcd', v)
+    for k, v in tables.items():
+        with open(f'docs/{k}.json', 'w') as f:
+            f.write(json.dumps(v))
 
 
 def load_data():
@@ -184,18 +201,27 @@ def load_data():
 def generate_layers(systems):
     pcd = o3d.geometry.PointCloud()
     color = (0.0,0.0,0.0)
-    layer_systems = systems[:['x','y','z']].to_numpy()
-    pcd.points = o3d.utility.Vector3dVector(layer_systems)
-    pcd.colors = o3d.utility.Vector3dVector([color for i in range(len(layer_systems))])
+    
+    json_columns = ['system_name', 'num_sites','mollusc', 'lagrange_cloud', 'ice_crystal', 'metallic_crystal', 'silicate_crystal','solid_mineral','x','y','z']
+    
+    systems = systems.copy()
+    systems['system_name'] = systems.index
+    
+    pcd.points = o3d.utility.Vector3dVector(systems[['x','y','z']].to_numpy())
+    pcd.colors = o3d.utility.Vector3dVector([color for i in range(len(systems))])
+    d = systems[json_columns].to_dict('records')
     
     num_groups = len(species.keys())
     layers = {'all_systems': pcd}
+    tables = {'all_systems': d}
     for i, group in enumerate(species.keys()):
         color = plt.cm.viridis(i/num_groups)
-        columns = [k for k in species_column_names if k.startswith(group)]
         pcd = o3d.geometry.PointCloud()
-        layer_systems = systems[systems[columns].any(1)][['x','y','z']].to_numpy()
-        pcd.points = o3d.utility.Vector3dVector(layer_systems)
+        layer_systems = systems[systems[group]]
+        pcd.points = o3d.utility.Vector3dVector(layer_systems[['x','y','z']].to_numpy())
         pcd.colors = o3d.utility.Vector3dVector([color[:3] for i in range(len(layer_systems))])
         layers[group] = pcd
-    return layers
+        
+        d = systems[json_columns].to_dict('records')
+        tables[group] = d
+    return layers, tables

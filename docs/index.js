@@ -4,10 +4,11 @@ import { TrackballControls  } from 'https://unpkg.com/three/examples/jsm/control
 import { PLYLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PLYLoader.js';
 import { PCDLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PCDLoader.js';
 
-var camera, scene, renderer, controls, loader, geometry, mouse, raycaster, geom_group, gridHelper;
+var camera, scene, renderer, controls, loader, geometry, mouse, raycaster, geom_group, gridHelper, INTERSECTED, system_geom;
 
 var black = new THREE.Color(0x000000);
 var white = new THREE.Color(0xffffff);
+var mouse = new THREE.Vector2();
 var gridHelper;
 var iRay = 0;
 var width, height;
@@ -32,16 +33,10 @@ function onMouseMove( event ) {
 
 	// calculate mouse position in normalized device coordinates
 	// (-1 to +1) for both components
-  //console.log("Moving mouse", event);
 
-	/*
-  mouse.x = ( event.clientX / width ) * 2 - 1;
-	mouse.y = - ( event.clientY / height ) * 2 + 1;
-  */
   //mouse.x = ( event.clientX / width ) * 2 - 1;
 	//mouse.y = - ( event.clientY / height ) * 2 + 1;
   let canvasBounds = renderer.getContext().canvas.getBoundingClientRect();
-  mouse = new THREE.Vector2();
   mouse.x = ( ( event.clientX - canvasBounds.left ) / ( canvasBounds.right - canvasBounds.left ) ) * 2 - 1;
   mouse.y = - ( ( event.clientY - canvasBounds.top ) / ( canvasBounds.bottom - canvasBounds.top) ) * 2 + 1;
   //let vec = new THREE.Vector3(mouse.x, mouse.y, 0.5);
@@ -55,21 +50,30 @@ function load_layer(name, update_camera=false) {
   clear_scene();
   geom_group = new THREE.Group();
   loader.load(name+'.pcd', function(points) {
-    points.layers.enable(0);
+    points.layers.set(0);
     console.log("Loaded pcd file");
     var sprite = new THREE.TextureLoader().load( 'images/circle.png' );
     
     console.log("Material:", points.material);
     
-   
-    points.material.vertexColors = false;
-    points.material.size = 20;
+    let num_points = points.geometry.attributes.position.count;
+    let colors = [];
+    let sizes = []
+    for(let i=0;i<num_points;i++){
+      sizes.push(10);
+      colors.push(0.8, 0.8, 0.8);
+    }
+    points.geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
+    points.geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    points.material.vertexColors = true;
+    points.material.size = 10;
     points.material.map = sprite;
     points.material.transparent = true;
     points.material.alphaTest = 0.8;
     points.material.sizeAttenuation = false;
     points.material.needsUpdate = true;
     console.log("Points:", points);
+    system_geom = points;
     geom_group.add(points);
     scene.add(geom_group);
     
@@ -87,8 +91,7 @@ function load_layer(name, update_camera=false) {
       let controls_target = camera_lookat;
       
       let gridSize = (bb.max.x - bb.min.x) > 100? Math.floor((bb.max.x - bb.min.x)/10)*10 : 1
-      console.log("gridHelper:", gridHelper);
-      console.log("gridSize:", gridSize);
+      
       gridHelper.scale.set(gridSize, gridSize, gridSize);
       
       console.log("Looking at", camera_lookat);
@@ -96,11 +99,6 @@ function load_layer(name, update_camera=false) {
       camera.lookAt(camera_lookat.x, camera_lookat.y, camera_lookat.z);
       controls.target.set(controls_target.x, controls_target.y, controls_target.z);
       camera.updateMatrixWorld();
-      
-      
-      
-      
-      console.log("GridHelper:", gridHelper);
       
       /*
       //Add the camera_lookat and camera_pos as points in there for debugging.
@@ -130,14 +128,15 @@ function updateGrid(){
 }
 
 function init() {
-  width = $("#map").width();
-  height = $("#map").height();
+  width = $("#map").width()*0.99;
+  height = $("#map").height()*0.99;
   //width = window.innerWidth;
   //height = window.innerHeight;
   console.log('size:', width, height);
   
   raycaster = new THREE.Raycaster();
   raycaster.layers.set(0);
+  raycaster.params.Points = {threshold: 10};
   mouse = new THREE.Vector2();
   
   renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -183,8 +182,6 @@ function resize() {
 	console.log("resizing");
   width = $("#map").width();
   height = $("#map").height();
-  //width = window.innerWidth;
-  //height = window.innerHeight;
 
 	camera.aspect = width / width;
 	camera.updateProjectionMatrix();
@@ -210,17 +207,28 @@ function render() {
     iRay=0;
   }
   
-  //console.log("children: ", scene.children);
-  let intersects = raycaster.intersectObjects( scene.children );
-  if(intersects.length > 0){
-    console.log("Intersects: ", intersects);
+  if(system_geom != null) {
+    let intersects = raycaster.intersectObject( system_geom );
+    if(intersects.length > 0){
+      console.log("Intersects: ", intersects);
+      if(INTERSECTED != intersects[0].index) {
+        let attributes = system_geom.geometry.attributes;
+        attributes.size.array[ INTERSECTED ] = 10;
+        attributes.color.array[INTERSECTED*3] = 0.8;
+        attributes.color.array[INTERSECTED*3+1] = 0.8;
+        attributes.color.array[INTERSECTED*3+2] = 0.8;
+        INTERSECTED = intersects[0].index;
+        attributes.size.array[INTERSECTED] = 20;
+        attributes.color.array[INTERSECTED*3] = 1.0; 
+        attributes.color.array[INTERSECTED*3+1] = 0.0;
+        attributes.color.array[INTERSECTED*3+2] = 1.0;
+        attributes.color.needsUpdate = true;
+        attributes.size.needsUpdate = true;
+      }
+    }
+    
+
   }
-  
-  for ( var i = 0; i < intersects.length; i++ ) {
-    console.log("Intersecting point", intersects[i]);
-		intersects[ i ].object.material.color.set( 0xff0000 );
-    intersects[ i ].object.material.colorNeedsUpdate = true;
-	}
   
   renderer.render( scene, camera );
 }
