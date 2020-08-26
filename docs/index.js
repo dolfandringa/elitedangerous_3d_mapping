@@ -5,7 +5,7 @@ import { PLYLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PLYLoade
 import { PCDLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PCDLoader.js';
 import { openDB, deleteDB, wrap, unwrap } from 'https://unpkg.com/idb?module';
 
-var camera, scene, renderer, controls, loader, geometry, mouse, raycaster, geom_group, gridHelper, INTERSECTED, system_geom;
+var camera, scene, renderer, controls, loader, geometry, mouse, raycaster, geom_group, gridHelper, INTERSECTED, system_geom, db;
 
 var black = new THREE.Color(0x000000);
 var white = new THREE.Color(0xffffff);
@@ -21,6 +21,7 @@ $( document ).ready(function() {
   animate();
 });
 
+const layers = ['all_systems', 'ice_crystal','lagrange_cloud','metallic_crystal','mollusc','silicate_crystal','solid_mineral'];
 
 function clear_scene() {
   scene.remove(geom_group);
@@ -40,8 +41,13 @@ function onMouseMove( event ) {
 
 }
 
-function load_layer(name, update_camera=false) {
+export async function getSystemByCoordinates(x, y, z) {
+  return db.getFromIndex('systems', 'coords', [x, y, z]);
+}
+
+export function load_layer(name, update_camera=false) {
   console.log('Loading layer ', name);
+  syncdb(name);
   clear_scene();
   geom_group = new THREE.Group();
   loader.load(name+'.pcd', function(points) {
@@ -112,20 +118,48 @@ function load_layer(name, update_camera=false) {
   
 }
 
-async function syncdb(table) {
-  //https://github.com/jakearchibald/idb#article-store
+export async function syncdb(table) {
+  db = await openDB(`babana_nebula_${table}`, 2, {
+    upgrade(db) {
+      console.log(`upgrading ${table}`);
+      try {
+        db.deleteObjectStore('systems', {keyPath: 'id'});
+      } catch {};
+      try {
+        db.deleteObjectStore('config');
+      }  catch {};
+      const store = db.createObjectStore('systems');
+      store.createIndex('coords', ['x','y','z'], {multiEntry: false}); 
+      const config_store = db.createObjectStore('config');
+    },
+  });
+  console.log('Fetching json data');
   const res = await fetch(table+".json")
   let last_modified = new Date(res.headers.get("Last-Modified"));
-  const db = await openDB('babana_nebula');
-  const import_date = new Date(await db.get(table, 'importDate'));
+  
+  const import_date = await db.get('config', 'importDate');
+  console.log("Last modified:", last_modified, "import_date:", import_date);
+  if(!import_date || new Date(import_date) < last_modified) {
+    console.log('importing data');
+    await db.clear('systems');
+    let json = await res.json();
+    const tx = db.transaction('systems', 'readwrite');
+    for(let i=0;i<json.length;i++) {
+      const system = json[i];
+      tx.store.add(system, i);
+    }
+    await tx.done;
+    console.log("Finished adding system data");
+    await db.put('config',  new Date(), 'importDate');
+  }
   
 }
 
-function updateGrid(){
+export function updateGrid(){
   gridHelper.position.set(controls.target.x, controls.target.y, controls.target.z);
 }
 
-function init() {
+export function init() {
   //syncdb('all_systems');
   width = $("#map").width()*0.99;
   height = $("#map").height()*0.99;
@@ -168,13 +202,13 @@ function init() {
 
 }
 
-function onChangeCamera() {
+export function onChangeCamera() {
   updateGrid();
   //render();
 
 }
 
-function resize() {
+export function resize() {
 	console.log("resizing");
   width = $("#map").width();
   height = $("#map").height();
@@ -186,18 +220,29 @@ function resize() {
 	render();
 }
 
-function setInfo(s) {
-  $("#system_info").html(`<h3 class="ui header">Coordinates</h3><p>x: ${s.x}</p><p>y: ${s.y}</p><p>z: ${s.z}</p>`);
+export async function setInfo(s) {
+  const system = await getSystemByCoordinates(s.x, s.y, s.z);
+  console.log("Found system", system, "for", s);
+  let template = `<h3 class="ui header">${system.system_name}</h3>`;
+  for(const k of Object.keys(system)){
+    if(['system_name','x','y','z'].indexOf(k)>=0){
+      continue
+    }
+    template+=`<p>${k.replace("_"," ")}: ${system[k]}</p>`;
+  }
+  template +=`<p>Coordinates: (${s.x}; ${s.y}; ${s.z})</p>`;
+  
+  $("#system_info").html(template);
 }
 
 
-function animate() {
+export function animate() {
   requestAnimationFrame( animate );
   controls.update();
   render();
 }
 
-function render() {
+export function render() {
   camera.updateMatrixWorld();
   raycaster.setFromCamera( mouse, camera );
 

@@ -11,20 +11,13 @@
       }
       #map {
         width: 100%;
-        height: 100%;
+        height: 90vh;
       }
       .ui.grid { 
-        height: 100%;
       }
       
-      .ui.grid.stretched { 
-        flex-direction: column;
-      }
-      .ui.grid.stretched > .row {
-        flex: 0 1 auto;
-      }
-      .ui.grid.stretched > .stretched.row {
-        flex: 1 1 auto;
+      #system_info {
+
       }
     </style>
     <script
@@ -36,18 +29,18 @@
 		<script type="module" src="index.js"></script>
 	</head>
 	<body>
-		<div class="ui grid stretched">
+		<div class="ui grid">
       <div class="row">
         <div class="sixteen wide column">
           <h1 class="header">Banana Nebula Notable Stellar Phenomena Map</h1>
         </div>
       </div>
-      <div class="stretched row">
-        <div class="thirteen wide column">
+      <div class="row">
+        <div class="twelve wide column">
           <div id="map"></div>
         </div>
-        <div class="three wide column">
-          <div class="ui grid stretched">
+        <div class="four wide column">
+          <div class="ui grid">
             <div class="row">
               <div class="column">
                 <h2 class="small header">Navigation</h2>
@@ -107,7 +100,7 @@
                 </div>
               </div>
             </div>
-            <div class="stretched row">
+            <div class="row">
               <div class="column">
                 <h2 class="small header">System info</h2>
                 <div id="system_info">
