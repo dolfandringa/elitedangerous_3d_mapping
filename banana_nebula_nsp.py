@@ -199,7 +199,6 @@ def save_layers(layers, tables):
         with open(f'docs/{k}.json', 'w') as f:
             f.write(json.dumps(v))
 
-
 def load_data():
     store = pd.HDFStore('banana_nebula_nsp.h5')
     systems = store.get('/systems')
@@ -233,3 +232,10 @@ def generate_layers(systems):
         d = layer_systems[json_columns].to_dict('records')
         tables[group] = d
     return layers, tables
+    
+def main():
+    systems, sites = read_gsheet()
+    systems, sites = calculate_columns(systems, sites)
+    layers, tables = generate_layers(systems[systems['x'] != -1])
+    save_data(systems, sites)
+    save_layers(layers, tables)
