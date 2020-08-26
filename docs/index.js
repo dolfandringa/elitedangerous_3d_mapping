@@ -40,9 +40,12 @@ function onMouseMove( event ) {
   mouse.y = - ( ( event.clientY - canvasBounds.top ) / ( canvasBounds.bottom - canvasBounds.top) ) * 2 + 1;
 
 }
+export function roundCoord(num) {
+  return Math.round((num+Number.EPSILON)*100000)/100000;
+}
 
 export async function getSystemByCoordinates(x, y, z) {
-  return db.getFromIndex('systems', 'coords', [x, y, z]);
+  return db.getFromIndex('systems', 'coords', [roundCoord(x), roundCoord(y), roundCoord(z)]);
 }
 
 export function load_layer(name, update_camera=false) {
