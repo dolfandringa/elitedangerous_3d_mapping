@@ -134,13 +134,16 @@ export async function syncdb(table) {
       const config_store = db.createObjectStore('config');
     },
   });
-  console.log('Fetching json data');
-  const res = await fetch(table+".json")
+  
+  console.log('Checking json last modified date');
+  const res = await fetch(table+".json", {cache: "no-cache", method: 'HEAD'});
   let last_modified = new Date(res.headers.get("Last-Modified"));
   
   const import_date = await db.get('config', 'importDate');
   console.log("Last modified:", last_modified, "import_date:", import_date);
   if(!import_date || new Date(import_date) < last_modified) {
+    console.log('Fetching json data');
+    const res = await fetch(table+".json", {cache: "no-cache", method: 'GET'});
     console.log('importing data');
     await db.clear('systems');
     let json = await res.json();
