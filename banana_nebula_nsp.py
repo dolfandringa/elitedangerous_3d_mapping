@@ -210,7 +210,7 @@ def generate_layers(systems):
     pcd = o3d.geometry.PointCloud()
     color = (0.0,0.0,0.0)
     
-    json_columns = ['system_name', 'num_sites','mollusc', 'lagrange_cloud', 'ice_crystal', 'metallic_crystal', 'silicate_crystal','solid_mineral','x','y','z']
+    json_columns = ['system_name','added_by','num_sites','mollusc', 'lagrange_cloud', 'ice_crystal', 'metallic_crystal', 'silicate_crystal','solid_mineral','x','y','z']
     
     systems = systems.copy()
     systems['system_name'] = systems.index
