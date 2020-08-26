@@ -49,6 +49,7 @@ export function load_layer(name, update_camera=false) {
   console.log('Loading layer ', name);
   syncdb(name);
   clear_scene();
+  clearInfo();
   geom_group = new THREE.Group();
   loader.load(name+'.pcd', function(points) {
     points.layers.set(0);
@@ -218,6 +219,10 @@ export function resize() {
 
 	renderer.setSize( width, height );
 	render();
+}
+
+export async function clearInfo() {
+  $("#system_info").html("");
 }
 
 export async function setInfo(s) {
