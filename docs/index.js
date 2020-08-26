@@ -40,12 +40,16 @@ function onMouseMove( event ) {
   mouse.y = - ( ( event.clientY - canvasBounds.top ) / ( canvasBounds.bottom - canvasBounds.top) ) * 2 + 1;
 
 }
-export function roundCoord(num) {
-  return Math.round((num+Number.EPSILON)*100000)/100000;
+export function roundCoord(n) {
+  //round to 2 decimals, but also round to nearest EVEN if right in the middle. This is what python and other languages use too
+  //so 14747.12500 rounds to 14747.12 while 14747.13500 rounds to 14747.14
+  decimals = 2
+  return (Math.round((n * Math.pow(10, decimals)) / 2) * 2) / Math.pow(10, decimals)
 }
 
 export async function getSystemByCoordinates(x, y, z) {
-  return db.getFromIndex('systems', 'coords', [roundCoord(x), roundCoord(y), roundCoord(z)]);
+  
+  return db.getFromIndex('systems', 'coords', [x, y, z]);
 }
 
 export function load_layer(name, update_camera=false) {
@@ -232,7 +236,15 @@ export async function clearInfo() {
 }
 
 export async function setInfo(s) {
+  s.x = roundCoord(s.x);
+  s.y = roundCoord(s.y);
+  s.z = roundCoord(s.z);
   const system = await getSystemByCoordinates(s.x, s.y, s.z);
+  if(system === undefined) {
+    console.error("Could not find a system for", s)
+    clearInfo();
+    return;
+  }
   console.log("Found system", system, "for", s);
   let template = `<h3 class="ui header">${system.system_name}</h3>`;
   for(const k of Object.keys(system)){
