@@ -233,7 +233,7 @@ export async function setInfo(s) {
     if(['system_name','x','y','z'].indexOf(k)>=0){
       continue
     }
-    template+=`<p>${k.replace("_"," ")}: ${system[k]}</p>`;
+    template+=`<p>${k.replace("_"," ")}: ${system[k] || ''}</p>`;
   }
   template +=`<p>Coordinates: (${s.x}; ${s.y}; ${s.z})</p>`;
   
