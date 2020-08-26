@@ -34,8 +34,6 @@ species = {
     'solid_mineral': ['SOLID SPHERES']
 }
 
-species_column_names = [f"{k}_{sp.lower().replace(', ','_')}" for k,v in species.items() for sp in v]
-
 number_re =  re.compile('^([0-9\.-]*).*')
 
 def get_matches(value, l):
@@ -50,6 +48,16 @@ def isfloat(value):
         return True
     except ValueError:
         return False
+
+def columnToSpecies(name):
+    group, species = name.split('_', 1)
+    species = " " .join([v.capitalize() for v in species.split('_')])
+    return group, species
+
+def speciesToColumn(group, species):
+    return f"{group}_{species.lower().replace(', ','_')}"
+
+species_column_names = [speciesToColumn(k, sp) for k,v in species.items() for sp in v]
 
 def process_line(result, line):
     (systems, sites, rownum) = result
@@ -176,7 +184,7 @@ def calculate_columns(systems, sites):
     systems = systems.join(sites[['system_name', 'added_by']+species_column_names].groupby(by=['system_name']).agg(agg_columns))
     for group in species.keys():
         columns = [k for k in species_column_names if k.startswith(group)]
-        systems[group] = systems[columns].any(1)
+        systems[group] = systems.apply(lambda row: ", ".join([columnToSpecies(col)[1] for col in columns if row[col]]) or None, axis=1)
     return systems, sites
 
 def save_data(systems, sites):
@@ -217,11 +225,11 @@ def generate_layers(systems):
     for i, group in enumerate(species.keys()):
         color = plt.cm.viridis(i/num_groups)
         pcd = o3d.geometry.PointCloud()
-        layer_systems = systems[systems[group]]
+        layer_systems = systems[systems[group].notnull()]
         pcd.points = o3d.utility.Vector3dVector(layer_systems[['x','y','z']].to_numpy())
         pcd.colors = o3d.utility.Vector3dVector([color[:3] for i in range(len(layer_systems))])
         layers[group] = pcd
         
-        d = systems[json_columns].to_dict('records')
+        d = layer_systems[json_columns].to_dict('records')
         tables[group] = d
     return layers, tables
