@@ -42,9 +42,9 @@ function onMouseMove( event ) {
 }
 export function roundCoord(n) {
   //round to 2 decimals, but also round to nearest EVEN if right in the middle. This is what python and other languages use too
-  //so 14747.12500 rounds to 14747.12 while 14747.13500 rounds to 14747.14
-  decimals = 2
-  return (Math.round((n * Math.pow(10, decimals)) / 2) * 2) / Math.pow(10, decimals)
+  //so 14747.12500 rounds to 14747.12, 14747.12510 rounds to 14747.13 while 14747.13500 rounds to 14747.14
+  let decimals = 2
+  return (Math.round(n * Math.pow(10, decimals))) / Math.pow(10, decimals)
 }
 
 export async function getSystemByCoordinates(x, y, z) {
