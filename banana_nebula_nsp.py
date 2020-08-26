@@ -212,7 +212,7 @@ def generate_layers(systems):
     
     json_columns = ['system_name','added_by','num_sites','mollusc', 'lagrange_cloud', 'ice_crystal', 'metallic_crystal', 'silicate_crystal','solid_mineral','x','y','z']
     
-    systems = systems.copy()
+    systems = systems.replace({np.nan: None})
     systems['system_name'] = systems.index
     
     pcd.points = o3d.utility.Vector3dVector(systems[['x','y','z']].to_numpy())
@@ -225,7 +225,7 @@ def generate_layers(systems):
     for i, group in enumerate(species.keys()):
         color = plt.cm.viridis(i/num_groups)
         pcd = o3d.geometry.PointCloud()
-        layer_systems = systems[systems[group].notnull()]
+        layer_systems = systems[systems[group].notnull()].replace({np.nan: None})
         pcd.points = o3d.utility.Vector3dVector(layer_systems[['x','y','z']].to_numpy())
         pcd.colors = o3d.utility.Vector3dVector([color[:3] for i in range(len(layer_systems))])
         layers[group] = pcd
