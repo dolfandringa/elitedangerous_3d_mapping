@@ -96,7 +96,7 @@ def process_line(result, line):
         except TypeError:
             pass
     line = line + (14-len(line)) * [None] # Pad with None values until we have the full 14 columns
-    if (line[11], line[12], line[13]) != (None, None, None):
+    if not any([l is None for l in line[11:14]]):
         #We have 3 coordinate fields
         x = number_re.sub(r'\1', line[11].strip())
         y = number_re.sub(r'\1', line[12].strip())
