@@ -15,7 +15,8 @@ import open3d as o3d
 from fuzzywuzzy import process
 import json
 
-logging.basicConfig(format='%(asctime)s-%(name)s: %(message)s', level=logging.ERROR, datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(format='%(asctime)s-%(name)s: %(message)s',
+                    level=logging.ERROR, datefmt='%Y-%m-%d %H:%M:%S')
 logging.getLogger('nsp_mapping').setLevel(logging.DEBUG)
 log = logging.getLogger('nsp_mapping.load_sheet_data')
 
@@ -27,10 +28,14 @@ species = {
         'LIVIDUM, BULLET',
         'RUBEUM, BULLET',
         'VIRIDE, BULLET'],
-    'lagrange_cloud': ['CAERULEUM', 'CROCEUM', 'LUTEOLUM', 'PROTO', 'ROSEUM', 'RUBICUNDUM', 'VIRIDE'],
-    'ice_crystal': ['ALBIDUM', 'FLAVUM', 'LINDIGOTICUM', 'PRASINUM', 'PURPUREUM', 'ROSEUM', 'RUBEUM'],
-    'metallic_crystal': ['ALBIDUM', 'FLAVUM', 'LINDIGOTICUM', 'PRASINUM', 'PURPUREUM', 'ROSEUM', 'RUBEUM'],
-    'silicate_crystal': ['ALBIDUM', 'FLAVUM', 'LINDIGOTICUM', 'PRASINUM', 'PURPUREUM', 'ROSEUM', 'RUBEUM', 'SOLID SPHERES'],
+    'lagrange_cloud': ['CAERULEUM', 'CROCEUM', 'LUTEOLUM', 'PROTO', 'ROSEUM',
+                       'RUBICUNDUM', 'VIRIDE'],
+    'ice_crystal': ['ALBIDUM', 'FLAVUM', 'LINDIGOTICUM', 'PRASINUM',
+                    'PURPUREUM', 'ROSEUM', 'RUBEUM'],
+    'metallic_crystal': ['ALBIDUM', 'FLAVUM', 'LINDIGOTICUM', 'PRASINUM',
+                         'PURPUREUM', 'ROSEUM', 'RUBEUM'],
+    'silicate_crystal': ['ALBIDUM', 'FLAVUM', 'LINDIGOTICUM', 'PRASINUM',
+                         'PURPUREUM', 'ROSEUM', 'RUBEUM', 'SOLID SPHERES'],
     'solid_mineral': ['SOLID SPHERES']
 }
 

@@ -5,13 +5,14 @@ import { PLYLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PLYLoade
 import { PCDLoader } from 'https://unpkg.com/three/examples/jsm/loaders/PCDLoader.js';
 import { openDB, deleteDB, wrap, unwrap } from 'https://unpkg.com/idb?module';
 
-var camera, scene, renderer, controls, loader, geometry, mouse, raycaster, geom_group, gridHelper, INTERSECTED, system_geom, db;
+var camera, scene, renderer, controls, loader, geometry, mouse, raycaster, geom_group, nebulae_group, gridHelper, INTERSECTED, system_geom, current_layer_name;
 
 var black = new THREE.Color(0x000000);
 var white = new THREE.Color(0xffffff);
 var mouse = new THREE.Vector2();
 var gridHelper;
 var iRay = 0;
+var db_version = 3;
 var width, height;
 //width = 0.8*window.innerWidth;
 //height = 0.8*window.innerHeight;
@@ -48,12 +49,77 @@ export function roundCoord(n) {
 }
 
 export async function getSystemByCoordinates(x, y, z) {
-  
+  let db = await openDB(`babana_nebula_${current_layer_name}`, db_version);
   return db.getFromIndex('systems', 'coords', [x, y, z]);
+}
+
+export function updateCamera(bb){
+      
+  // Set the camera half the y size of the bounding box above it, but with x and z in the middle of the bb.
+  let camera_pos = new THREE.Vector3((bb.max.x - bb.min.x)/2+bb.min.x, (bb.max.y - bb.min.y)/2+bb.max.y, (bb.max.z - bb.min.z)/2+bb.min.z);
+  
+  //Set the lookAt parameter to the middle of the bounding box.
+  let camera_lookat = new THREE.Vector3((bb.max.x - bb.min.x)/2+bb.min.x,(bb.max.y - bb.min.y)/2+bb.min.y, (bb.max.z - bb.min.z)/2+bb.min.z);
+  let controls_target = camera_lookat;
+  
+  let gridSize = (bb.max.x - bb.min.x) > 100? Math.floor((bb.max.x - bb.min.x)/10)*10 : 1
+  
+  gridHelper.scale.set(gridSize, gridSize, gridSize);
+  
+  camera.position.set(camera_pos.x, camera_pos.y, camera_pos.z);
+  camera.lookAt(camera_lookat.x, camera_lookat.y, camera_lookat.z);
+  controls.target.set(controls_target.x, controls_target.y, controls_target.z);
+  camera.updateMatrixWorld();
+  
+  /*
+  //Add the camera_lookat and camera_pos as points in there for debugging.
+  let ref_geom = new THREE.BufferGeometry();
+  let ref_colors = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+  let ref_points_array = [camera_pos.x, camera_pos.y, camera_pos.z, camera_lookat.x, camera_lookat.y, camera_lookat.z];
+  ref_geom.setAttribute('position', new THREE.Float32BufferAttribute(ref_points_array, 3));
+  ref_geom.setAttribute('color', new THREE.Float32BufferAttribute(ref_colors, 3));
+  ref_geom.computeBoundingSphere();
+  let points_material = new THREE.PointsMaterial({ size: 100, vertexColors: true});
+  let ref_points = new THREE.Points(ref_geom, points_material);
+  console.log("Reference points:", ref_points);
+  scene.add(ref_points);
+  */
+}
+
+export async function loadNebulae(bb) {
+  console.log("Loading nebulae for bb", bb);
+  scene.remove(nebulae_group);
+  let db = await openDB(`babana_nebula_nebulae`, db_version);
+  let nebulae = await db.getAll('systems');
+  nebulae_group = new THREE.Group();
+  nebulae_group.layers.set(2);
+  for(let nebula of nebulae) {
+    console.log('nebula', nebula);
+    if((nebula.x+nebula.diameter<bb.min.x || nebula.x-nebula.diameter>bb.max.x) && (nebula.y+nebula.diameter<bb.min.y || nebula.y-nebula.diameter>bb.max.y) && (nebula.z+nebula.diameter<bb.min.z || nebula.z-nebula.diameter>bb.max.z)) {
+      //Both x, y, and z are outside the bounding box.
+      console.log("Out of bounding box", nebula);
+      continue;
+    }
+    var geometry = new THREE.SphereBufferGeometry( nebula.diameter/2, 32, 32 );
+    geometry.name=nebula.name;
+    console.log(geometry);
+    geometry.computeVertexNormals();
+    
+    var material = new THREE.MeshBasicMaterial( { color: 0x9b7c0e, shininess: 10, opacity: 0.4, transparent: true } );
+    var mesh = new THREE.Mesh( geometry, material );
+    mesh.position.set(nebula.x, nebula.y, nebula.z);
+    console.log("mesh", mesh);
+    console.log("mesh position", mesh.getWorldPosition());
+
+    
+    nebulae_group.add(mesh);
+  }
+  scene.add(nebulae_group);
 }
 
 export function load_layer(name, update_camera=false) {
   console.log('Loading layer ', name);
+  current_layer_name = name;
   syncdb(name);
   clear_scene();
   clearInfo();
@@ -82,41 +148,12 @@ export function load_layer(name, update_camera=false) {
     system_geom = points;
     geom_group.add(points);
     scene.add(geom_group);
-    
+   
     points.geometry.computeBoundingBox();
+    let bb = points.geometry.boundingBox;
+    loadNebulae(bb)
     if(update_camera){
-      let bb = points.geometry.boundingBox
-      
-      // Set the camera half the y size of the bounding box above it, but with x and z in the middle of the bb.
-      let camera_pos = new THREE.Vector3((bb.max.x - bb.min.x)/2+bb.min.x, (bb.max.y - bb.min.y)/2+bb.max.y, (bb.max.z - bb.min.z)/2+bb.min.z);
-      
-      //Set the lookAt parameter to the middle of the bounding box.
-      let camera_lookat = new THREE.Vector3((bb.max.x - bb.min.x)/2+bb.min.x,(bb.max.y - bb.min.y)/2+bb.min.y, (bb.max.z - bb.min.z)/2+bb.min.z);
-      let controls_target = camera_lookat;
-      
-      let gridSize = (bb.max.x - bb.min.x) > 100? Math.floor((bb.max.x - bb.min.x)/10)*10 : 1
-      
-      gridHelper.scale.set(gridSize, gridSize, gridSize);
-      
-      camera.position.set(camera_pos.x, camera_pos.y, camera_pos.z);
-      camera.lookAt(camera_lookat.x, camera_lookat.y, camera_lookat.z);
-      controls.target.set(controls_target.x, controls_target.y, controls_target.z);
-      camera.updateMatrixWorld();
-      
-      /*
-      //Add the camera_lookat and camera_pos as points in there for debugging.
-      let ref_geom = new THREE.BufferGeometry();
-      let ref_colors = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-      let ref_points_array = [camera_pos.x, camera_pos.y, camera_pos.z, camera_lookat.x, camera_lookat.y, camera_lookat.z];
-      ref_geom.setAttribute('position', new THREE.Float32BufferAttribute(ref_points_array, 3));
-      ref_geom.setAttribute('color', new THREE.Float32BufferAttribute(ref_colors, 3));
-      ref_geom.computeBoundingSphere();
-      let points_material = new THREE.PointsMaterial({ size: 100, vertexColors: true});
-      let ref_points = new THREE.Points(ref_geom, points_material);
-      console.log("Reference points:", ref_points);
-      scene.add(ref_points);
-      */
-
+      updateCamera(bb)
     }
     
     console.log("Added points");
@@ -127,7 +164,7 @@ export function load_layer(name, update_camera=false) {
 }
 
 export async function syncdb(table) {
-  db = await openDB(`babana_nebula_${table}`, 2, {
+  let db = await openDB(`babana_nebula_${table}`, db_version, {
     upgrade(db) {
       console.log(`upgrading ${table}`);
       try {
@@ -174,6 +211,7 @@ export function init() {
   //syncdb('all_systems');
   width = $("#map").width()*0.99;
   height = $("#map").height()*0.99;
+  syncdb('nebulae');
   
   raycaster = new THREE.Raycaster();
   raycaster.layers.set(0);
@@ -193,8 +231,9 @@ export function init() {
 
   camera = new THREE.PerspectiveCamera( 90, width / height, 1, 100000 );
   //camera.up.set(0,-1,0);
-  camera.layers.enable(0);
-  camera.layers.enable(1);
+  camera.layers.enable(0); //active layer systems
+  camera.layers.enable(1); //grid
+  camera.layers.enable(2); //nebulae
   
   controls = new OrbitControls(camera, renderer.domElement);
   controls.autoRotate = false;
@@ -208,7 +247,7 @@ export function init() {
   
   $('input[name=layer]').change(onLayerChange);
   loader = new PCDLoader();
-
+  
   load_layer('all_systems', true)
 
 }
