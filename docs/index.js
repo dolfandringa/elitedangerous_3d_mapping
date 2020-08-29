@@ -305,7 +305,7 @@ export async function setInfo(s, nebula_name) {
   
   template += `<h3 class="ui header">${system.system_name}</h3>`;
   if(nebula_name !== undefined) {
-    template += `<p><strong>Nebula: </strong>${nebula_name}</p>`
+    //template += `<p><strong>Nebula: </strong>${nebula_name}</p>`
   }
   
   for(const k of Object.keys(system)){
