@@ -93,6 +93,8 @@ export async function loadNebulae(bb) {
   let nebulae = await db.getAll('systems');
   nebulae_group = new THREE.Group();
   nebulae_group.layers.set(2);
+  let texture = new THREE.TextureLoader().load( "images/cloud.png" );
+  let material = new THREE.MeshBasicMaterial( { map: texture, color: 0xffaa00, opacity: 1.0, transparent: true } );
   for(let nebula of nebulae) {
     console.log('nebula', nebula);
     if((nebula.x+nebula.diameter<bb.min.x || nebula.x-nebula.diameter>bb.max.x) && (nebula.y+nebula.diameter<bb.min.y || nebula.y-nebula.diameter>bb.max.y) && (nebula.z+nebula.diameter<bb.min.z || nebula.z-nebula.diameter>bb.max.z)) {
@@ -105,8 +107,8 @@ export async function loadNebulae(bb) {
     console.log(geometry);
     geometry.computeVertexNormals();
     
-    var material = new THREE.MeshBasicMaterial( { color: 0x9b7c0e, shininess: 10, opacity: 0.4, transparent: true } );
-    var mesh = new THREE.Mesh( geometry, material );
+    
+    let mesh = new THREE.Mesh( geometry, material );
     mesh.position.set(nebula.x, nebula.y, nebula.z);
     console.log("mesh", mesh);
     console.log("mesh position", mesh.getWorldPosition());
