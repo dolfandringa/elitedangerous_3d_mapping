@@ -90,30 +90,45 @@ export async function loadNebulae(bb) {
   console.log("Loading nebulae for bb", bb);
   scene.remove(nebulae_group);
   let db = await openDB(`babana_nebula_nebulae`, db_version);
+  let loader = new THREE.FontLoader();
   let nebulae = await db.getAll('systems');
   nebulae_group = new THREE.Group();
   nebulae_group.layers.set(2);
   let texture = new THREE.TextureLoader().load( "images/cloud.png" );
   let material = new THREE.MeshBasicMaterial( { map: texture, color: 0xffaa00, opacity: 1.0, transparent: true } );
+  let textMaterials = [
+					new THREE.MeshBasicMaterial( { color: 0x999999 } ), // front
+					new THREE.MeshBasicMaterial( { color: 0x444444 } ) // side
+				];
   for(let nebula of nebulae) {
-    console.log('nebula', nebula);
     if((nebula.x+nebula.diameter<bb.min.x || nebula.x-nebula.diameter>bb.max.x) && (nebula.y+nebula.diameter<bb.min.y || nebula.y-nebula.diameter>bb.max.y) && (nebula.z+nebula.diameter<bb.min.z || nebula.z-nebula.diameter>bb.max.z)) {
       //Both x, y, and z are outside the bounding box.
-      console.log("Out of bounding box", nebula);
       continue;
     }
+    loader.load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
+      console.log("Setting font for nebula", nebula);
+      let fontGeometry = new THREE.TextGeometry(nebula.name, {
+        font: font,
+        size: nebula.diameter*0.1,
+        height: 1,
+      } );
+      let textGeo = new THREE.BufferGeometry().fromGeometry( fontGeometry );
+      textGeo.computeBoundingBox();
+      textGeo.computeVertexNormals();
+      let centerOffsetX = - 0.5 * ( textGeo.boundingBox.max.x - textGeo.boundingBox.min.x );
+      let centerOffsetY = ( textGeo.boundingBox.max.y - textGeo.boundingBox.min.y );
+      let textMesh = new THREE.Mesh( textGeo, textMaterials );
+      textMesh.position.set(nebula.x + centerOffsetX, nebula.y+nebula.diameter/2+centerOffsetY, nebula.z);
+      nebulae_group.add(textMesh);
+
+    });
     var geometry = new THREE.SphereBufferGeometry( nebula.diameter/2, 32, 32 );
     geometry.name=nebula.name;
-    console.log(geometry);
     geometry.computeVertexNormals();
     
-    
     let mesh = new THREE.Mesh( geometry, material );
+    mesh.name = nebula.name;
     mesh.position.set(nebula.x, nebula.y, nebula.z);
-    console.log("mesh", mesh);
-    console.log("mesh position", mesh.getWorldPosition());
-
-    
     nebulae_group.add(mesh);
   }
   scene.add(nebulae_group);
@@ -276,7 +291,7 @@ export async function clearInfo() {
   $("#system_info").html("");
 }
 
-export async function setInfo(s) {
+export async function setInfo(s, nebula_name) {
   s.x = roundCoord(s.x);
   s.y = roundCoord(s.y);
   s.z = roundCoord(s.z);
@@ -286,11 +301,19 @@ export async function setInfo(s) {
     clearInfo();
     return;
   }
-  console.log("Found system", system, "for", s);
-  let template = `<h3 class="ui header">${system.system_name}</h3>`;
+  let template = '';
+  
+  template += `<h3 class="ui header">${system.system_name}</h3>`;
+  if(nebula_name !== undefined) {
+    template += `<p><strong>Nebula: </strong>${nebula_name}</p>`
+  }
+  
   for(const k of Object.keys(system)){
     if(['system_name','x','y','z'].indexOf(k)>=0){
       continue
+    }
+    if(!system[k]) {
+      continue;
     }
     template+=`<p>${k.replace("_"," ")}: ${system[k] || ''}</p>`;
   }
@@ -309,9 +332,15 @@ export function animate() {
 export function render() {
   camera.updateMatrixWorld();
   raycaster.setFromCamera( mouse, camera );
-
+  let nebula_name;
   if(system_geom != null) {
     let intersects = raycaster.intersectObject( system_geom );
+    if(nebulae_group) {
+      let intersects_nebula = raycaster.intersectObject( nebulae_group, true );
+      if(intersects_nebula.length>0) {
+        nebula_name = intersects_nebula[0].object.name;
+      }
+    }
     if(intersects.length > 0){
       if(INTERSECTED != intersects[0].index) {
         let attributes = system_geom.geometry.attributes;
@@ -329,7 +358,7 @@ export function render() {
         let x = attributes.position.array[INTERSECTED*3];
         let y = attributes.position.array[INTERSECTED*3+1];
         let z = attributes.position.array[INTERSECTED*3+2];
-        setInfo({x,y,z});
+        setInfo({x,y,z}, nebula_name);
       }
     }
     
