@@ -1,6 +1,9 @@
 token.pickle
 .vscode
 # Data
+node_modules/*
+.vscode
+token.pickle
 *.csv
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -12,9 +15,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
