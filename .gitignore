@@ -1,3 +1,5 @@
+token.pickle
+.vscode
 # Data
 *.csv
 # Byte-compiled / optimized / DLL files
