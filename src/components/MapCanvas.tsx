@@ -15,9 +15,9 @@ interface Dimensions {
 }
 
 export default class MapCanvas extends React.Component<MapProps> {
-    private canvasStyle = {width: "100%", height: "90vh"};
+    private canvasStyle = { width: "100%", height: "90vh" };
     private canvasRef: React.RefObject<any>;
-    
+
     private camera: THREE.Camera;
     private controls: OrbitControls;
     private scene: THREE.Scene;
@@ -39,15 +39,15 @@ export default class MapCanvas extends React.Component<MapProps> {
 
     public componentDidUpdate(prevProps: MapProps) {
         if (prevProps.layers !== this.props.layers) {
-          this.updateLayers(prevProps.layers, this.props.layers);
+            this.updateLayers(prevProps.layers, this.props.layers);
         }
     }
 
     private updateLayers(oldLayers: Layer[], newLayers: Layer[]) {
-        for (let layer of difference(oldLayers, newLayers)){
+        for (let layer of difference(oldLayers, newLayers)) {
             this.deactivateLayer(layer);
         }
-        for (let layer of difference(newLayers, oldLayers)){
+        for (let layer of difference(newLayers, oldLayers)) {
             this.activateLayer(layer);
         }
     }
@@ -65,7 +65,7 @@ export default class MapCanvas extends React.Component<MapProps> {
         this.nebulae.layers.set(2);
     }
 
-    private updateGrid(){
+    private updateGrid() {
         this.gridHelper.position.set(this.controls.target.x, this.controls.target.y, this.controls.target.z);
     }
 
@@ -76,18 +76,18 @@ export default class MapCanvas extends React.Component<MapProps> {
     private initMap(dimensions: Dimensions) {
 
         this.scene = new THREE.Scene();
-        this.gridHelper = new THREE.GridHelper( 1, 20);
+        this.gridHelper = new THREE.GridHelper(1, 20);
         this.scene.add(this.gridHelper);
         this.mouse = new THREE.Vector2();
-        this.renderer = new THREE.WebGLRenderer( { canvas: this.canvasRef.current, antialias: true } );
+        this.renderer = new THREE.WebGLRenderer({ canvas: this.canvasRef.current, antialias: true });
         this.raycaster = new THREE.Raycaster();
         this.activeLayers = new THREE.Group();
 
         this.raycaster.layers.set(0);
-        this.raycaster.params.Points = {threshold: 10};
+        this.raycaster.params.Points = { threshold: 10 };
         this.gridHelper.layers.set(1);
 
-        this.camera = new THREE.PerspectiveCamera( 90, dimensions.width / dimensions.height, 1, 100000 );
+        this.camera = new THREE.PerspectiveCamera(90, dimensions.width / dimensions.height, 1, 100000);
         this.camera.layers.enable(0); //active layer systems
         this.camera.layers.enable(1); //grid
         this.camera.layers.enable(2); //nebulae
@@ -96,23 +96,22 @@ export default class MapCanvas extends React.Component<MapProps> {
         this.controls.autoRotate = false;
         this.controls.screenSpacePanning = true;
         this.controls.enableDamping = true;
-        this.controls.addEventListener('change', this.onChangeCamera );
-        this.renderer.setSize( dimensions.width, dimensions.height );
+        this.controls.addEventListener('change', this.onChangeCamera);
+        this.renderer.setSize(dimensions.width, dimensions.height);
     }
 
     public animate() {
-        requestAnimationFrame( this.animate );
+        requestAnimationFrame(this.animate);
         this.controls.update();
         this.renderCanvas();
     }
 
     private renderCanvas() {
         this.camera.updateMatrixWorld();
-        this.raycaster.setFromCamera( this.mouse, this.camera );
+        this.raycaster.setFromCamera(this.mouse, this.camera);
         let nebula_name;
-        this.renderer.render( this.scene, this.camera );
-      }
-      
+        this.renderer.render(this.scene, this.camera);
+    }
 
     public componentDidMount() {
         const dimensions = {
@@ -120,11 +119,11 @@ export default class MapCanvas extends React.Component<MapProps> {
             height: this.canvasRef.current.offsetHeight,
         };
         this.initMap(dimensions);
-      }
+    }
 
     public render() {
         return (
             <canvas style={this.canvasStyle} ref={this.canvasRef}></canvas>
-          );
+        );
     }
 }
