@@ -4,6 +4,7 @@ import { difference } from 'lodash';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Layer } from '../types';
+import { LayerDataService } from '../services';
 
 interface MapProps {
     layers: Layer[];
@@ -14,7 +15,11 @@ interface Dimensions {
     height: number;
 }
 
-export default class MapCanvas extends React.Component<MapProps> {
+interface MapState {
+    dimensions: Dimensions;
+}
+
+export default class MapCanvas extends React.Component<MapProps, MapState> {
     private canvasStyle = { width: "100%", height: "90vh" };
     private canvasRef: React.RefObject<any>;
 
@@ -30,6 +35,9 @@ export default class MapCanvas extends React.Component<MapProps> {
 
     constructor(props: MapProps) {
         super(props);
+        this.state = {
+            dimensions: { width: 0, height: 0 }
+        }
         this.canvasRef = createRef();
     }
 
@@ -54,6 +62,8 @@ export default class MapCanvas extends React.Component<MapProps> {
 
     private activateLayer(layer: Layer) {
         console.log("Turning on layer", layer);
+        console.log("Layer type", LayerDataService.getLayer(layer));
+
     }
 
     private deactivateLayer(layer: Layer) {
@@ -74,7 +84,7 @@ export default class MapCanvas extends React.Component<MapProps> {
     }
 
     private initMap(dimensions: Dimensions) {
-
+        this.setState({ dimensions });
         this.scene = new THREE.Scene();
         this.gridHelper = new THREE.GridHelper(1, 20);
         this.scene.add(this.gridHelper);
