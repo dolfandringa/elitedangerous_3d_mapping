@@ -1,11 +1,10 @@
 import * as React from 'react';
 import { Checkbox, Button } from 'semantic-ui-react';
 import { Layer } from '../types/Layers';
+import { MapContext } from '../context';
 
 interface LayerItemProps {
     layer: Layer;
-    layerToggle: (layer: Layer, on: boolean) => void;
-    layerZoom: (layer: Layer) => void;
 }
 
 export default class LayerItem extends React.Component<LayerItemProps> {
@@ -13,15 +12,19 @@ export default class LayerItem extends React.Component<LayerItemProps> {
         super(props);
     }
 
+    static contextType = MapContext;
+    context: React.ContextType<typeof MapContext>;
+
     layerToggle(event: React.FormEvent<HTMLInputElement>, { checked }) {
-        this.props.layerToggle(this.props.layer, checked);
+        this.context.layerToggle(this.props.layer, checked);
     }
 
     layerZoom(event: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
-        this.props.layerZoom(this.props.layer);
+        this.context.layerZoom(this.props.layer);
     }
 
     render() {
+        let loaded = this.context.loadedLayers.includes(this.props.layer)
         return (
             <div>
                 <Checkbox style={{ minWidth: '100px' }} onChange={this.layerToggle.bind(this)} label={this.props.layer.pretty_name} name={this.props.layer.name} toggle />

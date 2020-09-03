@@ -5,9 +5,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Layer } from '../types';
 import { LayerDataService } from '../services';
+import { MapContext } from '../context';
 
 interface MapProps {
-    layers: Layer[];
 }
 
 interface Dimensions {
@@ -30,40 +30,41 @@ export default class MapCanvas extends React.Component<MapProps, MapState> {
     private renderer: THREE.WebGLRenderer;
     private raycaster: THREE.Raycaster;
     private mouse: THREE.Vector2;
-    private activeLayers: THREE.Group;
+    private activeLayersGroup: THREE.Group;
     private nebulae: THREE.Group;
+    private activeLayers: Layer[] = [];
 
     constructor(props: MapProps) {
         super(props);
         this.state = {
-            dimensions: { width: 0, height: 0 }
+            dimensions: { width: 0, height: 0 },
         }
         this.canvasRef = createRef();
     }
 
-    static defaultProps = {
-        layers: []
-    }
+    static contextType = MapContext;
+    context: React.ContextType<typeof MapContext>;
 
-    public componentDidUpdate(prevProps: MapProps) {
-        if (prevProps.layers !== this.props.layers) {
-            this.updateLayers(prevProps.layers, this.props.layers);
+    public componentDidUpdate() {
+        console.log("Component updated with context:", this.context);
+        if (this.context.activeLayers != this.activeLayers) {
+            this.updateLayers();
         }
     }
 
-    private updateLayers(oldLayers: Layer[], newLayers: Layer[]) {
-        for (let layer of difference(oldLayers, newLayers)) {
+    private updateLayers() {
+        for (let layer of difference(this.activeLayers, this.context.activeLayers)) {
             this.deactivateLayer(layer);
         }
-        for (let layer of difference(newLayers, oldLayers)) {
+        for (let layer of difference(this.context.activeLayers, this.activeLayers)) {
             this.activateLayer(layer);
         }
+        this.activeLayers = [...this.context.activeLayers];
     }
 
     private activateLayer(layer: Layer) {
         console.log("Turning on layer", layer);
         console.log("Layer type", LayerDataService.getLayer(layer));
-
     }
 
     private deactivateLayer(layer: Layer) {
@@ -91,7 +92,7 @@ export default class MapCanvas extends React.Component<MapProps, MapState> {
         this.mouse = new THREE.Vector2();
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvasRef.current, antialias: true });
         this.raycaster = new THREE.Raycaster();
-        this.activeLayers = new THREE.Group();
+        this.activeLayersGroup = new THREE.Group();
 
         this.raycaster.layers.set(0);
         this.raycaster.params.Points = { threshold: 10 };
