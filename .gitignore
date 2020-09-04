@@ -1,6 +1,8 @@
 .vim/
 token.pickle
 .vscode
+node_modules/*
+# Data
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -11,9 +13,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
