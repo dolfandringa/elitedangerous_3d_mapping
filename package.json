@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/dolfandringa/elitedangerous_3d_mapping#readme",
   "dependencies": {
+    "idb": "^5.0.4",
     "lodash": "^4.17.20",
     "npx": "^10.2.2",
     "react": "^16.13.1",

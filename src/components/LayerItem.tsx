@@ -25,9 +25,10 @@ export default class LayerItem extends React.Component<LayerItemProps> {
 
     render() {
         let loaded = this.context.loadedLayers.includes(this.props.layer)
+        let active = this.context.activeLayers.includes(this.props.layer)
         return (
             <div>
-                <Checkbox style={{ minWidth: '100px' }} onChange={this.layerToggle.bind(this)} label={this.props.layer.pretty_name} name={this.props.layer.name} toggle />
+                <Checkbox checked={active} style={{ minWidth: '100px' }} onChange={this.layerToggle.bind(this)} label={this.props.layer.pretty_name} name={this.props.layer.name} toggle />
                 <Button onClick={this.layerZoom.bind(this)} data-tooltip="Zoom to layer" circular floated="right" icon='zoom' />
             </div>
         );

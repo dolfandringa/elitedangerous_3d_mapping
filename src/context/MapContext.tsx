@@ -30,10 +30,12 @@ const layers: Layer[] = [
     new JSONPCDLayer({
         name: 'all_systems',
         pretty_name: 'All systems',
-        fileURI: 'all_systems.json'
+        fileURI: 'all_systems.json',
+        default_on: true,
     }),
     new EDSMLayer({
         name: 'edsm',
+        default_on: false,
         pretty_name: 'EDSM',
         endpoint: 'https://www.edsm.net/api-v1/cube-systems',
         parameters: { x: 0, y: 0, z: 0, size: 500, showCoordinates: 1, showPermit: 1, showId: 1 }
