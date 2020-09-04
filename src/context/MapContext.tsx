@@ -37,8 +37,8 @@ const layers: Layer[] = [
         name: 'edsm',
         default_on: false,
         pretty_name: 'EDSM',
-        endpoint: 'https://www.edsm.net/api-v1/cube-systems',
-        parameters: { x: 0, y: 0, z: 0, size: 500, showCoordinates: 1, showPermit: 1, showId: 1 }
+        endpoint: 'https://www.edsm.net/api-v1/sphere-systems',
+        parameters: { showCoordinates: 1, showPermit: 1, showId: 1, showPrimaryStar: 1, showInformation: 1 }
     }),
 ];
 

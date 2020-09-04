@@ -119,7 +119,8 @@ export default class MapCanvas extends React.Component<MapProps, MapState> {
 
     private async activateLayer(layer: Layer) {
         console.log("Turning on layer", layer);
-        const geom = await LayerDataService.getLayer(layer);
+        const distance = this.camera.position.distanceTo(this.controls.target);
+        const geom = await LayerDataService.getLayer(layer, { center: this.controls.target, radius: distance });
         if (geom) {
             this.activeLayersGroup.add(geom);
             this.activeLayers[layer.name] = { layer, geom };
@@ -148,11 +149,6 @@ export default class MapCanvas extends React.Component<MapProps, MapState> {
 
     private onChangeCamera() {
         this.updateGrid();
-        const camera = this.controls.object as PerspectiveCamera;
-        camera.updateProjectionMatrix()
-        console.log("Camera", camera)
-        console.log("Camera near, far, fov, effectiveFOV, zoom, view:", camera.near, camera.far, camera.fov,
-            camera.getEffectiveFOV(), camera.zoom, camera.view)
     }
 
     private initMap(dimensions: Dimensions) {

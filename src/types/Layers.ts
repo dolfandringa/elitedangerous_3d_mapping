@@ -20,6 +20,15 @@ interface IEDSMLayer extends ILayer {
     }
 }
 
+export interface BoundingSphere {
+    radius: number;
+    center: {
+        x: number;
+        y: number;
+        z: number;
+    }
+}
+
 export class Layer {
     public name: string;
     public pretty_name: string;
