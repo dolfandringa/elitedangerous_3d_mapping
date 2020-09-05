@@ -14,7 +14,6 @@ interface IJSONPCDLayer extends ILayer {
 }
 
 interface IEDSMLayer extends ILayer {
-    endpoint: string;
     parameters: {
         [k: string]: any;
     }
@@ -22,6 +21,15 @@ interface IEDSMLayer extends ILayer {
 
 export interface BoundingSphere {
     radius: number;
+    center: {
+        x: number;
+        y: number;
+        z: number;
+    }
+}
+
+export interface BoundingBox {
+    size: number;
     center: {
         x: number;
         y: number;
@@ -53,13 +61,12 @@ export class NebulaLayer extends JSONPCDLayer {
 }
 
 export class EDSMLayer extends Layer {
-    public endpoint: string;
+
     public parameters: {
         [k: string]: any;
     }
-    constructor({ endpoint, parameters, ...rest }: IEDSMLayer) {
+    constructor({ parameters, ...rest }: IEDSMLayer) {
         super(rest);
-        this.endpoint = endpoint;
         this.parameters = parameters;
     }
 }

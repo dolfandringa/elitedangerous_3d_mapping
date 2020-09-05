@@ -48,6 +48,7 @@ export default class MapCanvas extends React.Component<MapProps, MapState> {
             dimensions: { width: 0, height: 0 },
         }
         this.canvasRef = createRef();
+        LayerDataService.syncSectorsTable();
     }
 
     static contextType = MapContext;
@@ -124,8 +125,11 @@ export default class MapCanvas extends React.Component<MapProps, MapState> {
         if (geom) {
             this.activeLayersGroup.add(geom);
             this.activeLayers[layer.name] = { layer, geom };
-            const bb = geom.geometry.boundingBox;
-            if (this.firstLayer) {
+            let bb: THREE.Box3;
+            if (geom instanceof THREE.Points || geom instanceof THREE.Mesh) {
+                bb = geom.geometry.boundingBox;
+            }
+            if (this.firstLayer && bb !== undefined) {
                 this.updateCamera(bb);
                 this.firstLayer = false;
             }
