@@ -22,12 +22,12 @@ log = logging.getLogger('nsp_mapping.load_sheet_data')
 
 
 species = {
-    'mollusc': ['BULLET',
-                'CEREUM, BULLET',
+    'mollusc': ['CEREUM, BULLET',
                 'FLAVUM, BULLET',
                 'LIVIDUM, BULLET',
                 'RUBEUM, BULLET',
-                'VIRIDE, BULLET'],
+                'VIRIDE, BULLET',
+                'ALBULUS, BELL'],
     'lagrange_cloud': ['CAERULEUM', 'CROCEUM', 'LUTEOLUM', 'PROTO', 'ROSEUM',
                        'RUBICUNDUM', 'VIRIDE'],
     'ice_crystal': ['ALBIDUM', 'FLAVUM', 'LINDIGOTICUM', 'PRASINUM',
