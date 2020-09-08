@@ -2,7 +2,9 @@ import json
 import logging
 import pandas as pd
 import math
+from datetime import datetime
 from pathlib import Path
+import gzip
 
 SECTOR0_ORIGIN = {'x': -49985, 'y': -40985, 'z': -24105}
 
@@ -29,6 +31,24 @@ def get_origin_from_sector_number(number):
     return {'x': x, 'y': y, 'z': z}
 
 
+def get_sector_from_number(sector_number):
+    min = get_origin_from_sector_number(sector_number)
+
+    max = {
+        'x': min['x'] + 1280,
+        'y': min['y'] + 1280,
+        'z': min['z'] + 1280
+    }
+
+    center = {
+        'x': min['x'] + 640,
+        'y': min['y'] + 640,
+        'z': min['z'] + 640
+    }
+
+    return {'sector_number': sector_number, 'min': min, 'max': max, 'center': center}
+
+
 def extract_id64_sector(id64):
     # bitfield index numbers are reversed becase LSB vs MSB
     # source: http://disc.thargoid.space/ID64
@@ -47,26 +67,15 @@ def extract_id64_sector(id64):
     mass_code = get_mass_code(id64b)
 
     # Get the x,y and z sector NUMBERS (not coordinates yet)
-    x = int(id64b[bitfields[mass_code]['x'][0]                  :bitfields[mass_code]['x'][1]], 2)
-    y = int(id64b[bitfields[mass_code]['y'][0]                  :bitfields[mass_code]['y'][1]], 2)
-    z = int(id64b[bitfields[mass_code]['z'][0]                  :bitfields[mass_code]['z'][1]], 2)
+    x = int(id64b[bitfields[mass_code]['x'][0]
+            :bitfields[mass_code]['x'][1]], 2)
+    y = int(id64b[bitfields[mass_code]['y'][0]
+            :bitfields[mass_code]['y'][1]], 2)
+    z = int(id64b[bitfields[mass_code]['z'][0]
+            :bitfields[mass_code]['z'][1]], 2)
     sector_number = (x, y, z)
 
-    min = get_origin_from_sector_number(sector_number)
-
-    max = {
-        'x': min['x'] + 1280,
-        'y': min['y'] + 1280,
-        'z': min['z'] + 1280
-    }
-
-    center = {
-        'x': min['x'] + 640,
-        'y': min['y'] + 640,
-        'z': min['z'] + 640
-    }
-
-    return {'sector_number': sector_number, 'min': min, 'max': max, 'center': center, 'mass_code': mass_code}
+    return get_sector_from_number(sector_number)
 
 
 def check(coords, sector): return (
@@ -130,7 +139,7 @@ def check_id64_sectors():
 
 def get_sectors_from_systems():
     sectors = {}
-    with open('../systemsWithCoordinates.json', 'r') as f:
+    with gzip.open('../systemsWithCoordinates.json.gz', 'rt', encoding='utf-8') as f:
         f.readline()  # skip the first line because it just starts an array
 
         # read the line but strip whitespace and the trailing comma
@@ -174,8 +183,7 @@ def write_sectors_json():
          encoding='utf-8').write(sectors.to_json(orient='index'))
 
 
-def get_full_sectors_list():
-    system_sectors = load_system_sectors()
+def get_full_sectors_list(system_sectors=load_system_sectors()):
     edastro_sectors = get_edastro_sectors()
     edastro_sectors_grouped = edastro_sectors.groupby(
         edastro_sectors['sector_number']).last()
@@ -185,23 +193,37 @@ def get_full_sectors_list():
     return full_sectors[list(system_sectors.columns)+['sectorName']]
 
 
-def get_file(sector_number):
-    x, y, z = [str(i) for i in sector_number]
-    dir = Path('docs', 'edsm', x, y, z)
-    if not(dir.is_dir()):
-        dir.mkdir(parents=True)
-    fname = dir / f'{x}_{y}_{z}.json'
-    f = fname.open('w', encoding='utf-8')
+def create_sector_file(sector_number):
+    # start without gzip compression but use it for the filename anyway
+    # compression will be done in close_files
+    fname = get_sector_file(sector_number)
+    f = open(fname, 'w', encoding='utf-8')
     f.write('[\n')
     f.close()
     return fname
 
 
+def get_sector_file(sector_number):
+    # start without gzip compression but use it for the filename anyway
+    # compression will be done in close_files
+    x, y, z = [str(i) for i in sector_number]
+    dir = Path.home()/Path('edsm', x, y)
+    if not(dir.is_dir()):
+        dir.mkdir(parents=True)
+    fname = dir / Path(f'{x}_{y}_{z}.json.gz')
+
+    return fname
+
+
 def close_files(sector_files):
-    for fname in sector_files.values:
-        f = fname.open('a', encoding='utf-8')
-        f.write(']')
-        f.close()
+    """Rewrite each file to add training json ]"""
+    for fname in sector_files.values():
+        with open(fname, 'r', encoding='utf-8') as f:
+            s = f.read().rstrip().rstrip(',')  # remove last trailing comma
+        s += '\n]'  # close json array
+        with gzip.open(fname, 'wt', encoding='utf-8', compresslevel=9) as f:
+            # compress file
+            f.write(s)
 
 
 def split_systems_with_coordinates_per_sector():
@@ -214,20 +236,88 @@ def split_systems_with_coordinates_per_sector():
     on a separate line and the 1st and last line containing the array delimiters.
     """
     sectors = get_full_sectors_list()
-    sector_files = dict((k, get_file(k)) for k in sectors.index)
-    with open('../systemsWithCoordinates.json', 'r') as f:
-        f.readline()  # skip the first line because it just starts an array
-
-        # read the line but strip whitespace and the trailing comma
-        line = f.readline().strip().rstrip(',')
-
-        while line != ']':
+    sector_files = dict((k, create_sector_file(k)) for k in sectors.index)
+    read = 0
+    with gzip.open('../systemsWithCoordinates.json.gz', mode='rt', encoding='utf-8') as f:
+        for i, line in enumerate(f):
+            if i % 50000 == 0:
+                print(f"{datetime.now()}:{i/50000} {round(read/1024**2,2)}MB")
+            line = line.strip().strip(',')
+            if line in ['[', ']']:
+                continue
             system = json.loads(line)
             sector = extract_id64_sector(system['id64'])
             system['sector'] = sector['sector_number']
-            sector_f = sector_files[sector['sector_number']].open(
-                'a', encoding='utf-8')
-            sector_f.write(f'\t{json.dumps(system)},\n')
-            sector_f.close()
-            line = f.readline().strip().rstrip(',')
+
+            # Unfortunately we need to rewrite the whole file because gzip compresses very badly when appending
+            out_line = f'\t{json.dumps(system)},\n'
+            read += len(out_line)
+            with open(sector_files[sector['sector_number']], 'a', encoding='utf-8') as f:
+                f.write(out_line)
+
     close_files(sector_files)
+
+
+def update_system_sector_files(source_file='../systemsWithCoordinates7days.json.gz'):
+    changed_sectors = {}
+    new_sectors = []
+    with gzip.open(source_file, mode='rt', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip().strip(',')
+            if line in ['[', ']']:
+                continue
+            system = json.loads(line)
+            sector = extract_id64_sector(system['id64'])
+            system['sector'] = sector['sector_number']
+            changed_sectors.setdefault(
+                sector['sector_number'], {})[system['id']] = system
+    num_changed = sum([len(v.keys()) for v in changed_sectors.values()])
+    i = 0
+    for sector_number, systems in changed_sectors.items():
+        j, k = (0, 0)
+        print(f'opening sector {sector_number}')
+        sector_file = get_sector_file(sector_number)
+        try:
+            json_data = gzip.open(sector_file, mode='rt',
+                                  encoding='utf-8').read()
+        except FileNotFoundError:
+            new_sectors.append(sector_number)
+            json_data = '[]'
+
+        try:
+            sector_data = json.loads(json_data)
+        except json.JSONDecodeError:
+            # original files had a trailing comma behind the last array item
+            # which causes a JSONDecodeError. So remove that comma.
+            sector_data = json.loads(
+                json_data.rstrip().rstrip(']').rstrip().rstrip(',')+'\n]')
+
+        for s in sector_data:
+            # Update existing systems
+            if s['id'] in systems.keys():
+                s.update(systems[s['id']])
+                del systems[s['id']]
+                j += 1
+
+        for system in systems.values():
+            # Add new systems
+            sector_data.append(system)
+            k += 1
+        i += j+k
+        with gzip.open(sector_file, 'wt', encoding='utf-8', compresslevel=9) as f:
+            f.write(json.dumps(sector_data))
+        print(f'Added {k} systems and changed {i} systems')
+        print(
+            f"Closed sector {sector_file}. Progress: {round(i/num_changed*100,1)}%")
+
+    new_sector_list = []
+    for sector_number in new_sectors:
+        sector = get_sector_from_number(sector_number)
+        new_sector_list.append(sector)
+    if len(new_sector_list):
+        new_sector_df = pd.DataFrame(new_sector_list)
+        new_sector_df.index = new_sector_df['sector_number']
+        new_sector_df = get_full_sectors_list(new_sector_df)
+        full_sector_list = pd.concat([get_full_sectors_list(), new_sector_df])
+        full_sector_list.to_hdf('sectors_from_updated_systems.h5', 'sectors')
+    print(f"Wrote {len(full_sector_list)} new sectors")

@@ -1,0 +1,12 @@
+tables
+pandas
+open3d
+sklearn
+requests
+numpy
+fuzzywuzzy
+matplotlib
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+python-Levenshtein
