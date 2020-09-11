@@ -1,28 +1,21 @@
-# Elite:Dangerous 3D mapping
-This repository contains my attempts to do 3D visualisations of the Elite:Dangerous galaxy map. There are many awesome community-built resources out there with a lot of useful data, but many of them only provide 2D visualisations. The Galaxy map in-game is easy to navigate but provides little functionality. I am trying to combine the 3D ease of navigation with the cool data gathered/compiled by others. 
+# ED3D: Elite:Dangerous 3D Map
+ED3D is a 3D map for Elite Dangerous. It draws from the awesome datasets already out there, and visualizes them in 3D. The current stable version is used for the Banana Nebula Expedition to map Notable Stellar Phenomena sites ardound the Banana Nebula Galaxy NGC3199. The map can be viewed on http://allican.be/elitedangerous_3d_mapping. 
 
-For now these are my main goals:
-- Make a 3D representation similar to the heatmap created by ED Astrometrics
-- Visualise the large permit locked systems in 3D
-- Provide a quick way to find known neutron stars closest to a specific system
+Issues are tracked in on [Github](https://github.com/dolfandringa/elitedangerous_3d_mapping/issues).
+
+Currently a rework is in progress turning it into a proper React app. This version will also include EDSM data and gradually add more sources like Neutron stars and other interesting information published by EDAstro and others. Development for that is going on in the [develop branch](https://github.com/dolfandringa/elitedangerous_3d_mapping/tree/develop).
+
 
 ## Data sources
 - Main datasource: ['SystemsWithCoordinates.json' file from edsm.net](https://www.edsm.net/en/nightly-dumps).
 - Neutron stars: [Neutron Stars (Raw List)](https://edastro.com/mapcharts/files/neutron-stars.csv) from [ED Astrometrics spreadsheets page](https://edastro.com/mapcharts/files.html)
 
 ## How to use
-The scripts are python scripts. This is not meant to be a simple application to use, but for now is just a collection of scripts that can be run by somebody who is somewhat comfortable with python. Maybe I'll publish a nice tool at some point, but don't hold your breath. If you wanna help, that's awesome.
+Just visit http://allican.be/elitedangerous_3d_mapping. This is a static website, actually hosted on github pages. The files are in the [docs folder of the master branch](https://github.com/dolfandringa/elitedangerous_3d_mapping/tree/master/docs).
 
-You need to `pip3 install pandas tables numpy sklearn open3d matplotlib` to install all dependencies. Then you can run the scripts. I run them in IPython with for instance `%run systems_clustering.py`. You need the `systemsWithCoordinates.json` file from EDSM. You can then run the `get_systems.py` script to create an HDF5 table from that, and use `systems_clustering.py`to generate the clusters.
+Scripts to generate the data are written in python3. Check the develop branch for them in the `scripts` folder. There is also a `requirements.txt` which contains the python dependencies.
 
-If you just want to see the 3D result, you can download the `.ply` file and visualize it with any tool that supports it. In python you can do it with the `show_clusters.py` script which just does the following:
+## Data
+In `docs/edsm` there are currently smaller dump of the EDSM data split up by 1280x1280x1280LY sectors to reduce the size per file. These are json files with lists of systems. The sector numbers are [derived from the id64](http://disc.thargoid.space/ID64) and sector 0,0,0 starts at `{'x': -49985, 'y': -40985, 'z': -24105}` and then just keeps moving up 1280LY at a time. The bubble is around 39,32,19.
 
-```
-import open3d as o3d
-pcd = o3d.io.read_point_cloud("clusters.ply")
-o3d.visualization.draw_geometries([pcd])
-```
-## Screenshots
-<img alt="Barnad's Loop Area top" src="https://raw.githubusercontent.com/dolfandringa/elitedangerous_3d_mapping/master/screenshots/barnards%20loop%20area%20top.png" width="700px" />
-<img alt="Barnad's Loop Area top" src="https://raw.githubusercontent.com/dolfandringa/elitedangerous_3d_mapping/master/screenshots/barnards%20loop%20area%20side.png" width="700px" />
-<img alt="Barnad's Loop Area top" src="https://raw.githubusercontent.com/dolfandringa/elitedangerous_3d_mapping/master/screenshots/horsehead%20restricted%20sectors.png" width="700px" />
+For the banana nebula and other data I generate h5 (hdf) files with the data that you are welcome to use. For the banana nebula also a csv is created for those interested.
