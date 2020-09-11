@@ -9,6 +9,12 @@ interface ILayer {
     default_on: boolean;
 }
 
+export interface Coordinates {
+    x: number;
+    y: number;
+    z: number;
+}
+
 interface IJSONPCDLayer extends ILayer {
     fileURI: string
 }
@@ -21,20 +27,20 @@ interface IEDSMLayer extends ILayer {
 
 export interface BoundingSphere {
     radius: number;
-    center: {
-        x: number;
-        y: number;
-        z: number;
-    }
+    center: Coordinates;
 }
 
 export interface BoundingBox {
     size: number;
-    center: {
-        x: number;
-        y: number;
-        z: number;
-    }
+    center: Coordinates;
+}
+
+export interface Sector {
+    sector_number: number[],
+    center: Coordinates;
+    min: Coordinates;
+    max: Coordinates;
+    sectorName: string;
 }
 
 export class Layer {

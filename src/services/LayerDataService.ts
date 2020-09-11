@@ -1,4 +1,4 @@
-import { JSONPCDLayer, Layer, EDSMLayer, BoundingSphere, BoundingBox } from "../types";
+import { JSONPCDLayer, Layer, Coordinates, EDSMLayer, BoundingSphere, BoundingBox, Sector } from "../types";
 import { JSONPCDLayerDB, EDSMLayerDB, SectorDB, SystemData } from '../db';
 import * as THREE from 'three';
 import { PCDLoader } from 'three/examples/jsm/loaders/PCDLoader';
@@ -160,6 +160,31 @@ export class LayerDataService {
         return point;
     }
 
+    static getSectorForCoords(coords: Coordinates): Sector {
+        let sector0_origin = { 'x': -49985, 'y': -40985, 'z': -24105 };
+        let x = Math.floor((coords.x - sector0_origin.x) / 1280);
+        let y = Math.floor((coords.y - sector0_origin.y) / 1280);
+        let z = Math.floor((coords.z - sector0_origin.z) / 1280);
+        return {
+            sector_number: [x, y, z],
+            min: {
+                x: (x + sector0_origin.x) * 1280,
+                y: (y + sector0_origin.y) * 1280,
+                z: (z + sector0_origin.z) * 1280,
+            },
+            max: {
+                x: (x + sector0_origin.x) * 1280 + 1280,
+                y: (y + sector0_origin.y) * 1280 + 1280,
+                z: (z + sector0_origin.z) * 1280 + 1280,
+            },
+            center: {
+                x: (x + sector0_origin.x) * 1280 + 640,
+                y: (y + sector0_origin.y) * 1280 + 640,
+                z: (z + sector0_origin.z) * 1280 + 640,
+            }
+        };
+    }
+
     static async getEDSMLayer(layer: EDSMLayer, sphere: BoundingSphere): Promise<THREE.Group | void> {
         console.log("Getting EDSM systems");
         console.log("for layer", layer, "and sphere", sphere)
@@ -167,7 +192,7 @@ export class LayerDataService {
 
         let boxes: BoundingBox[] = [];
         const max_radius = 100; // defined by EDSM
-        const total_max_radius = 1000;
+        const total_max_radius = 1280;
         const material = LayerDataService.getSystemMaterial(8);
         let geom_group = new THREE.Group();
 

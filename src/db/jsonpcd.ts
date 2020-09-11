@@ -1,20 +1,21 @@
 import Dexie from 'dexie';
 
-export const JSONPCDLayerSchemaVersion = 2;
+export const JSONPCDLayerSchemaVersion = 3;
 
 export interface SystemData {
     id?: number;
     x: number;
     y: number;
     z: number;
-    sector?: number;
+    sector?: number[];
     systemName: string;
     systemInfo?: object;
 }
 
 export interface ConfigData {
     key?: string;
-    value: string;
+    value?: string;
+    multi_number_value?: number[];
 }
 
 export class JSONPCDLayerDB extends Dexie {

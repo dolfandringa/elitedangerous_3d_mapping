@@ -1,29 +1,9 @@
 import Dexie from 'dexie';
 import { ConfigData } from './jsonpcd';
+import { Sector } from '../types';
 
-export interface SectorData {
+export interface SectorData extends Sector {
     id: number;
-    sectorName: string;
-    min: {
-        x: number;
-        y: number;
-        z: number;
-    };
-    max: {
-        x: number;
-        y: number;
-        z: number;
-    };
-    center: {
-        x: number;
-        y: number;
-        z: number;
-    };
-    size: {
-        x: number;
-        y: number;
-        z: number;
-    };
 }
 
 export const SectorSchemaVersion = 2;
@@ -35,7 +15,7 @@ export class SectorDB extends Dexie {
     constructor() {
         super("ed3d_sectors");
         this.version(SectorSchemaVersion).stores({
-            sectors: "++id,[min.x+max.x+min.y+max.y+min.z+max.z],[center.x+center.y+center.z],sectorName",
+            sectors: "++id,[min.x+max.x+min.y+max.y+min.z+max.z],[center.x+center.y+center.z],sectorName,sector_number",
             config: "&key",
         })
     }
