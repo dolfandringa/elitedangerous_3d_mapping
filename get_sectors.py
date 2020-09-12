@@ -6,12 +6,15 @@ import gzip
 import json
 import logging
 import math
+import multiprocessing as mp
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
 
 SECTOR0_ORIGIN = {'x': -49985, 'y': -40985, 'z': -24105}
+NEW_SECTORS = []
+NUM_CHANGED = 0
 
 
 def get_mass_code(id64):
@@ -317,12 +320,62 @@ def split_systems_with_coordinates_per_sector():
     close_files(sector_files)
 
 
+def write_changed_sectors(sector_number, systems, target_dir):
+    """Write changed sectors to the correct file."""
+    j, k = (0, 0)
+    print(f'opening sector {sector_number}')
+    new_sectors = []
+    sector_file = get_sector_file(sector_number, target_dir)
+    try:
+        json_data = gzip.open(sector_file, mode='rt',
+                              encoding='utf-8').read()
+    except FileNotFoundError:
+        new_sectors.append(sector_number)
+        json_data = '[]'
+
+    try:
+        sector_data = json.loads(json_data)
+    except json.JSONDecodeError:
+        # original files had a trailing comma behind the last array item
+        # which causes a JSONDecodeError. So remove that comma.
+        sector_data = json.loads(
+            json_data.rstrip().rstrip(']').rstrip().rstrip(',')+'\n]')
+
+    for s in sector_data:
+        # Update existing systems
+
+        if s['id'] in systems.keys():
+            s.update(systems[s['id']])
+            del systems[s['id']]
+            j += 1
+
+    for system in systems.values():
+        # Add new systems
+        sector_data.append(system)
+        k += 1
+    with gzip.open(sector_file, 'wt', encoding='utf-8',
+                   compresslevel=9) as f:
+        f.write(json.dumps(sector_data))
+    print(f'Added {k} systems and changed {j} systems')
+    print(f"Closed sector {sector_file}.")
+
+    return j+k, new_sectors
+
+
+def print_progress(i, new_sectors):
+    """Callback function for multiprocessing that prints the progress."""
+    global NUM_CHANGED
+    global NEW_SECTORS
+    NEW_SECTORS += new_sectors
+    progress = round(i / NUM_CHANGED * 100, 1)
+    print(f"Progress: {progress}%")
+
+
 def update_system_sector_files(
         target_dir=Path.home(),
         source_file='../systemsWithCoordinates7days.json.gz'):
     """Update existing system sector files."""
     changed_sectors = {}
-    new_sectors = []
     with gzip.open(source_file, mode='rt', encoding='utf-8') as f:
         for line in f:
             line = line.strip().strip(',')
@@ -334,51 +387,21 @@ def update_system_sector_files(
             system['sector'] = sector['sector_number']
             changed_sectors.setdefault(
                 sector['sector_number'], {})[system['id']] = system
-    num_changed = sum([len(v.keys()) for v in changed_sectors.values()])
-    i = 0
+    global NUM_CHANGED
+    global NEW_SECTORS
+    NEW_SECTORS = []
+    NUM_CHANGED = sum([len(v.keys()) for v in changed_sectors.values()])
+
+    pool = mp.Pool()
 
     for sector_number, systems in changed_sectors.items():
-        j, k = (0, 0)
-        print(f'opening sector {sector_number}')
-        sector_file = get_sector_file(sector_number, target_dir)
-        try:
-            json_data = gzip.open(sector_file, mode='rt',
-                                  encoding='utf-8').read()
-        except FileNotFoundError:
-            new_sectors.append(sector_number)
-            json_data = '[]'
-
-        try:
-            sector_data = json.loads(json_data)
-        except json.JSONDecodeError:
-            # original files had a trailing comma behind the last array item
-            # which causes a JSONDecodeError. So remove that comma.
-            sector_data = json.loads(
-                json_data.rstrip().rstrip(']').rstrip().rstrip(',')+'\n]')
-
-        for s in sector_data:
-            # Update existing systems
-
-            if s['id'] in systems.keys():
-                s.update(systems[s['id']])
-                del systems[s['id']]
-                j += 1
-
-        for system in systems.values():
-            # Add new systems
-            sector_data.append(system)
-            k += 1
-        i += j+k
-        with gzip.open(sector_file, 'wt', encoding='utf-8',
-                       compresslevel=9) as f:
-            f.write(json.dumps(sector_data))
-        progress = round(i/num_changed*100, 1)
-        print(f'Added {k} systems and changed {i} systems')
-        print(f"Closed sector {sector_file}. Progress: {progress}%")
+        pool.apply_async(write_changed_sectors,
+                         args=(sector_number, systems, target_dir),
+                         callback=print_progress)
 
     new_sector_list = []
 
-    for sector_number in new_sectors:
+    for sector_number in NEW_SECTORS:
         sector = get_sector_from_number(sector_number)
         new_sector_list.append(sector)
 
