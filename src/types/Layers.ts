@@ -1,78 +1,19 @@
-
-interface funcArgs {
-    [x: string]: any;
-}
-
-interface ILayer {
+export interface ILayer {
     name: string;
-    pretty_name: string;
-    default_on: boolean;
-}
-
-export interface Coordinates {
-    x: number;
-    y: number;
-    z: number;
-}
-
-interface IJSONPCDLayer extends ILayer {
-    fileURI: string
-}
-
-interface IEDSMLayer extends ILayer {
-    parameters: {
-        [k: string]: any;
-    }
-}
-
-export interface BoundingSphere {
-    radius: number;
-    center: Coordinates;
-}
-
-export interface BoundingBox {
-    size: number;
-    center: Coordinates;
-}
-
-export interface Sector {
-    sector_number: number[],
-    center: Coordinates;
-    min: Coordinates;
-    max: Coordinates;
-    sectorName: string;
+    prettyName: string;
+    defaultOn: boolean;
 }
 
 export class Layer {
     public name: string;
-    public pretty_name: string;
-    public default_on: boolean;
-    constructor({ name, pretty_name, default_on }: ILayer) {
-        this.name = name;
-        this.pretty_name = pretty_name;
-        this.default_on = default_on;
-    }
-}
 
-export class JSONPCDLayer extends Layer {
-    public fileURI: string;
-    constructor({ fileURI, ...rest }: IJSONPCDLayer) {
-        super(rest);
-        this.fileURI = fileURI;
-    }
-}
-export class NebulaLayer extends JSONPCDLayer {
-    // Technically the same as a JSONPCDLayer, but will be handleded differently in the app
-    // so we want to be able to differentite them.
-}
+    public prettyName: string;
 
-export class EDSMLayer extends Layer {
+    public defaultOn: boolean;
 
-    public parameters: {
-        [k: string]: any;
-    }
-    constructor({ parameters, ...rest }: IEDSMLayer) {
-        super(rest);
-        this.parameters = parameters;
+    constructor({ name, prettyName, defaultOn }: ILayer) {
+      this.name = name;
+      this.prettyName = prettyName;
+      this.defaultOn = defaultOn;
     }
 }

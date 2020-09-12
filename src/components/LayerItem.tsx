@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Checkbox, Button } from 'semantic-ui-react';
-import { Layer } from '../types/Layers';
+import { Layer } from '../types';
 import { MapContext } from '../context';
 
 interface LayerItemProps {
@@ -28,7 +28,7 @@ export default class LayerItem extends React.Component<LayerItemProps> {
         let active = this.context.activeLayers.includes(this.props.layer)
         return (
             <div>
-                <Checkbox checked={active} style={{ minWidth: '100px' }} onChange={this.layerToggle.bind(this)} label={this.props.layer.pretty_name} name={this.props.layer.name} toggle />
+                <Checkbox checked={active} style={{ minWidth: '100px' }} onChange={this.layerToggle.bind(this)} label={this.props.layer.prettyName} name={this.props.layer.name} toggle />
                 <Button onClick={this.layerZoom.bind(this)} data-tooltip="Zoom to layer" circular floated="right" icon='zoom' />
             </div>
         );

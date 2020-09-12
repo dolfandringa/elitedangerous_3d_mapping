@@ -78,7 +78,7 @@ export default class MapCanvas extends React.Component<MapProps, MapState> {
             this.layers.push(layer);
             LayerDataService.syncLayer(layer).then(() => {
                 this.context.setLayerLoaded(layer);
-                if (layer.default_on) {
+                if (layer.defaultOn) {
                     this.context.layerToggle(layer, true);
                 }
             });

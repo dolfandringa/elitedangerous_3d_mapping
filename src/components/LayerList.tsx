@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { EDSMLayer, JSONPCDLayer, Layer } from '../types/Layers';
+import { Layer } from '../types';
 import LayerItem from './LayerItem';
 import { Header, List } from 'semantic-ui-react';
 import { MapContext } from '../context';

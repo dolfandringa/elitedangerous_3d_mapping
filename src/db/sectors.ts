@@ -2,14 +2,10 @@ import Dexie from 'dexie';
 import { ConfigData } from './jsonpcd';
 import { Sector } from '../types';
 
-export interface SectorData extends Sector {
-    id: number;
-}
-
 export const SectorSchemaVersion = 2;
 
 export class SectorDB extends Dexie {
-    sectors: Dexie.Table<SectorData, number>;
+    sectors: Dexie.Table<Sector, number>;
     config: Dexie.Table<ConfigData, string>;
 
     constructor() {

@@ -29,14 +29,14 @@ interface MapContextProviderProps {
 const layers: Layer[] = [
     new JSONPCDLayer({
         name: 'all_systems',
-        pretty_name: 'All systems',
+        prettyName: 'All systems',
         fileURI: 'all_systems.json',
-        default_on: true,
+        defaultOn: true,
     }),
     new EDSMLayer({
         name: 'edsm',
-        default_on: false,
-        pretty_name: 'EDSM',
+        defaultOn: false,
+        prettyName: 'EDSM',
         parameters: { showCoordinates: 1, showPermit: 1, showId: 1, showPrimaryStar: 1, showInformation: 1 }
     }),
 ];
