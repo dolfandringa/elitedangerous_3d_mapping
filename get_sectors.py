@@ -11,10 +11,9 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+from tqdm import tqdm
 
 SECTOR0_ORIGIN = {'x': -49985, 'y': -40985, 'z': -24105}
-NEW_SECTORS = []
-NUM_CHANGED = 0
 
 
 def get_mass_code(id64):
@@ -323,14 +322,13 @@ def split_systems_with_coordinates_per_sector():
 def write_changed_sectors(sector_number, systems, target_dir):
     """Write changed sectors to the correct file."""
     j, k = (0, 0)
-    print(f'opening sector {sector_number}')
-    new_sectors = []
+    new = False
     sector_file = get_sector_file(sector_number, target_dir)
     try:
         json_data = gzip.open(sector_file, mode='rt',
                               encoding='utf-8').read()
     except FileNotFoundError:
-        new_sectors.append(sector_number)
+        new = True
         json_data = '[]'
 
     try:
@@ -338,8 +336,13 @@ def write_changed_sectors(sector_number, systems, target_dir):
     except json.JSONDecodeError:
         # original files had a trailing comma behind the last array item
         # which causes a JSONDecodeError. So remove that comma.
-        sector_data = json.loads(
-            json_data.rstrip().rstrip(']').rstrip().rstrip(',')+'\n]')
+        try:
+            sector_data = json.loads(
+                json_data.rstrip().rstrip(']').rstrip().rstrip(',')+'\n]')
+        except Exception:
+            logging.error("Error processing sector %s with data %s",
+                          sector_number, json_data)
+            raise
 
     for s in sector_data:
         # Update existing systems
@@ -356,19 +359,8 @@ def write_changed_sectors(sector_number, systems, target_dir):
     with gzip.open(sector_file, 'wt', encoding='utf-8',
                    compresslevel=9) as f:
         f.write(json.dumps(sector_data))
-    print(f'Added {k} systems and changed {j} systems')
-    print(f"Closed sector {sector_file}.")
 
-    return j+k, new_sectors
-
-
-def print_progress(i, new_sectors):
-    """Callback function for multiprocessing that prints the progress."""
-    global NUM_CHANGED
-    global NEW_SECTORS
-    NEW_SECTORS += new_sectors
-    progress = round(i / NUM_CHANGED * 100, 1)
-    print(f"Progress: {progress}%")
+    return (sector_number, new, j, k)
 
 
 def update_system_sector_files(
@@ -387,21 +379,38 @@ def update_system_sector_files(
             system['sector'] = sector['sector_number']
             changed_sectors.setdefault(
                 sector['sector_number'], {})[system['id']] = system
-    global NUM_CHANGED
-    global NEW_SECTORS
-    NEW_SECTORS = []
-    NUM_CHANGED = sum([len(v.keys()) for v in changed_sectors.values()])
+    num_changed = sum([len(v.keys()) for v in changed_sectors.values()])
 
     pool = mp.Pool()
+    results = []
+
+    pbar = tqdm(total=num_changed, unit="systems")
 
     for sector_number, systems in changed_sectors.items():
-        pool.apply_async(write_changed_sectors,
-                         args=(sector_number, systems, target_dir),
-                         callback=print_progress)
+        result = pool.apply_async(write_changed_sectors,
+                                  args=(sector_number, systems, target_dir),
+                                  callback=lambda x: pbar.update(x[2]+x[3]))
+        results.append(result)
+    new_sectors = []
+
+    updated = 0
+    added = 0
+
+    for result in results:
+        result.wait()
+        res = result.get()
+        updated += res[2]
+        added += res[3]
+
+        if res[1]:
+            new_sectors.append(res[0])
+    pbar.close()
+    print(f"Added {added} systems and updated {updated} systems. "
+          f"Found {len(new_sectors)} new sectors.")
 
     new_sector_list = []
 
-    for sector_number in NEW_SECTORS:
+    for sector_number in new_sectors:
         sector = get_sector_from_number(sector_number)
         new_sector_list.append(sector)
 
@@ -411,4 +420,3 @@ def update_system_sector_files(
         new_sector_df = get_full_sectors_list(new_sector_df)
         full_sector_list = pd.concat([get_full_sectors_list(), new_sector_df])
         full_sector_list.to_hdf('sectors_from_updated_systems.h5', 'sectors')
-    print(f"Wrote {len(full_sector_list)} new sectors")
