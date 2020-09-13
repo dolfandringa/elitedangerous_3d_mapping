@@ -20,7 +20,7 @@ export class EDSMLayerDB extends Dexie {
         this.version(EDSMLayerSchemaVersion).stores({
             systems: "++id,[x+y+z],sector,systemName",
             config: "&key",
-            sectors: "&sector_number",
+            sectors: "&sector_number,updatedDate,lastLoadedDate",
         })
     }
 };

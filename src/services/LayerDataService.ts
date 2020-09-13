@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import { PCDLoader } from 'three/examples/jsm/loaders/PCDLoader';
 import { BufferGeometry } from 'three';
 import {
-  JSONPCDLayerDB, EDSMLayerDB, SectorDB,
+  JSONPCDLayerDB, EDSMLayerDB, SectorDB, SectorUpdateInfo,
 } from '../db';
+import {ungzip} from 'pako';
 import {
   JSONPCDLayer,
   System,
@@ -106,8 +107,45 @@ export class LayerDataService {
     }
   }
 
+  static async updateEDSMSector(sector: SectorUpdateInfo, db: EDSMLayerDB) {
+    const updatedDate = sector.updatedDate;
+    const [sx, sy, sz] = sector.sector_number;
+    const jsonFilename = `edsm/${sx}/${sy}/${sx}_${sy}_${sz}.json.gz`;
+    let res = await fetch(jsonFilename, {
+      cache: 'no-cache',
+      method: 'HEAD',
+    });
+    const lastModified = new Date(res.headers.get('Last-Modified'));
+    if (!updatedDate || new Date(updatedDate) < lastModified) {
+      res = await fetch(jsonFilename, {
+        cache: 'no-cache',
+        method: 'GET',
+      });
+      console.log('importing data');
+      await db.systems.where('sector_number').equals(sector.sector_number).delete();
+      const json = JSON.parse(ungzip(new Uint8Array(await res.arrayBuffer()),
+                                     {to: 'string'}));
+      await db.transaction('rw', db.systems, async () => {
+        json.apply((sector: Sector) => {
+          db.sectors.add(sector);
+        });
+      });
+
+      console.log('Finished adding system data');
+      await db.config.put(
+        { key: 'importDate', value: new Date().toISOString() },
+        'importDate',
+      );
+      await db.config.put({ key: 'ready', value: '1' }, 'ready');
+    } else {
+      console.log('Sectors database already up-to-date.');
+    }
+
+  }
+
   static async syncEDSMLayer(layer: EDSMLayer) {
     const db = new EDSMLayerDB(layer.name); // by instantiating we auto upgrade it.
+    db.sectors.orderBy('lastLoadedDate').reverse().each(sector => LayerDataService.updateEDSMSector(sector, db));
   }
 
   static async getLayer(

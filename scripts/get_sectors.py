@@ -223,11 +223,13 @@ def load_system_sectors():
     return pd.read_hdf('sectors_from_systems.h5', 'sectors')
 
 
-def write_sectors_json():
+def write_sectors_json(sectors=None):
     """Write a json file of the sectors from the dataframe."""
-    sectors = get_full_sectors_list()
+
+    if sectors is None:
+        sectors = get_full_sectors_list()
     open('docs/sectors.json', 'w',
-         encoding='utf-8').write(sectors.to_json(orient='index'))
+         encoding='utf-8').write(sectors.to_json(orient='records'))
 
 
 def get_full_sectors_list(system_sectors=load_system_sectors()):
@@ -237,9 +239,13 @@ def get_full_sectors_list(system_sectors=load_system_sectors()):
         edastro_sectors['sector_number']).last()
     full_sectors = system_sectors.join(
         edastro_sectors_grouped, how='left', rsuffix='_edastro')
-    full_sectors['sectorName'] = full_sectors.Sector
+    full_sectors['sectorName'] = full_sectors.Sector.fillna('Unkown')
+    columns = list(system_sectors.columns)
 
-    return full_sectors[list(system_sectors.columns)+['sectorName']]
+    if 'sectorName' not in columns:
+        columns.append('sectorName')
+
+    return full_sectors[columns]
 
 
 def create_sector_file(sector_number):
