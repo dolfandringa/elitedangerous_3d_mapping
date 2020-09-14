@@ -107,47 +107,6 @@ export class LayerDataService {
     }
   }
 
-  static async updateEDSMSector(sector: SectorUpdateInfo, db: EDSMLayerDB) {
-    const updatedDate = sector.updatedDate;
-    const [sx, sy, sz] = sector.sector_number;
-    const jsonFilename = `edsm/${sx}/${sy}/${sx}_${sy}_${sz}.json.gz`;
-    let res = await fetch(jsonFilename, {
-      cache: 'no-cache',
-      method: 'HEAD',
-    });
-    const lastModified = new Date(res.headers.get('Last-Modified'));
-    if (!updatedDate || new Date(updatedDate) < lastModified) {
-      res = await fetch(jsonFilename, {
-        cache: 'no-cache',
-        method: 'GET',
-      });
-      console.log('importing data');
-      await db.systems.where('sector_number').equals(sector.sector_number).delete();
-      const json = JSON.parse(ungzip(new Uint8Array(await res.arrayBuffer()),
-                                     {to: 'string'}));
-      await db.transaction('rw', db.systems, async () => {
-        json.apply((sector: Sector) => {
-          db.sectors.add(sector);
-        });
-      });
-
-      console.log('Finished adding system data');
-      await db.config.put(
-        { key: 'importDate', value: new Date().toISOString() },
-        'importDate',
-      );
-      await db.config.put({ key: 'ready', value: '1' }, 'ready');
-    } else {
-      console.log('Sectors database already up-to-date.');
-    }
-
-  }
-
-  static async syncEDSMLayer(layer: EDSMLayer) {
-    const db = new EDSMLayerDB(layer.name); // by instantiating we auto upgrade it.
-    db.sectors.orderBy('lastLoadedDate').reverse().each(sector => LayerDataService.updateEDSMSector(sector, db));
-  }
-
   static async getLayer(
     layer: Layer,
     sphere: BoundingSphere,
@@ -211,23 +170,63 @@ export class LayerDataService {
     });
   }
 
-  static async storeEDSMSystems(
-    systems: System[],
-    sector: Sector,
-    layer: Layer,
-  ) {
-    const db = new EDSMLayerDB(layer.name);
 
-    db.transaction('rw', db.systems, async () => {
-      for( const system of systems) {
-        db.systems.add({ sector: sector.sector_number, ...system });
-      }
+  static async updateEDSMSector(sector_number: number[], db: EDSMLayerDB) {
+    const sector = await db.sectors.where('sector_number').equals(sector_number).first();
+    console.log("Checking for EDSM updates for sector", sector);
+    const updatedDate = sector.updatedDate;
+    const [sx, sy, sz] = sector.sector_number;
+    const jsonFilename = `edsm/${sx}/${sy}/${sx}_${sy}_${sz}.json.gz`;
+    let res = await fetch(jsonFilename, {
+      cache: 'no-cache',
+      method: 'HEAD',
     });
+    const lastModified = new Date(res.headers.get('Last-Modified'));
+    if (!updatedDate || new Date(updatedDate) < lastModified) {
+      res = await fetch(jsonFilename, {
+        cache: 'no-cache',
+        method: 'GET',
+      });
+      console.log('importing data');
+      await db.systems.where('sector').equals(sector.sector_number).delete();
+      const json = JSON.parse(ungzip(new Uint8Array(await res.arrayBuffer()),
+                                     {to: 'string'}));
+      await db.transaction('rw', db.systems, async () => {
+        console.log('extracted json', json);
+        for(const system of json) {
+          const {coords, ...rest} = system;
+          db.systems.add({...rest, ...coords});
+        };
+      });
 
-    await db.config.put(
-      { key: 'importDate', value: new Date().toISOString() },
-      'importDate',
-    );
+      console.log('Finished adding system data');
+      sector.updatedDate = new Date();
+      await db.sectors.put(sector);
+    } else {
+      console.log('Systems for sector', sector, 'already up-to-date.');
+    }
+
+  }
+
+  static async getEDSMSector(sector: Sector, layer: EDSMLayer): Promise<System[]> {
+    console.log('Getting systems for sector', sector);
+    const db = new EDSMLayerDB(layer.name); // by instantiating we auto upgrade it.
+    const sectorInfo = await db.sectors.where('sector_number').equals(sector.sector_number).first();
+    console.log('sectorInfo', sectorInfo);
+    if(sectorInfo) {
+      const systems = await db.systems.where('sector').equals(sector.sector_number).toArray();
+      if(systems.length>0)
+        return systems;
+    }
+    await db.sectors.put({sector_number: sector.sector_number});
+    await LayerDataService.updateEDSMSector(sector.sector_number, db);
+    return await db.systems.where('sector').equals(sector.sector_number).toArray();
+    
+  }
+
+  static async syncEDSMLayer(layer: EDSMLayer) {
+    const db = new EDSMLayerDB(layer.name); // by instantiating we auto upgrade it.
+    db.sectors.orderBy('lastLoadedDate').reverse().each(sector => LayerDataService.updateEDSMSector(sector.sector_number, db));
   }
 
   static createEDSMPoints(
@@ -367,86 +366,34 @@ export class LayerDataService {
     console.log('Getting data for sectors', sectors);
 
     const fetchSystems = async (sectors: Sector[]) => {
-      const cb = async (
-        res: Response,
-        sector: Sector,
-        start: Date,
-      ): Promise<boolean> => {
-        if (!res.ok) {
-          console.error(
-            'Error loading EDSMLayer',
-            layer,
-            'error',
-            res.status,
-            res.statusText,
-          );
-          return false;
-        }
-        const json = await res.json();
-        console.log('Got systems', json);
-        const limit = parseFloat(res.headers.get('x-rate-limit-limit'));
-        const reset = parseFloat(res.headers.get('x-rate-limit-reset'));
-        const duration = (new Date().getTime() - start.getTime()) / 1000;
-        // we are allowed reset/limit seconds per request, and this request took duration seconds
-        if (isNaN(limit) || isNaN(reset)) {
-          throw new Error('No rate limiting could be detected');
-        }
-        const waitTime = reset / limit - duration;
+      
+      let failedSectors:Sector[] = []; 
+      let promises: Promise<boolean>[] = [];
+      for (const sector of sectors) {
+        console.log('getting sector', sector);
+        promises.push(LayerDataService.getEDSMSector(sector, layer).then((systems: System[]) => {
+          const point = LayerDataService.createEDSMPoints(
+            systems,
+            material,
+            sector,
+            layer);
 
-        if (waitTime > 60) {
-          throw new Error(`EDSM requests limit exceeded. Wait time: ${waitTime}`);
-        }
-
-        if (!(json instanceof Array)) {
-          console.log('No systems found');
-          return new Promise((resolve) => {
-            setTimeout(resolve, waitTime * 1000, true);
-          });
-        }
-        const point = LayerDataService.createEDSMPoints(
-          json,
-          material,
-          sector,
-          layer,
-        );
-        if (point instanceof THREE.Points) {
-          geomGroup.add(point);
-        }
-        return new Promise((resolve) => {
-          setTimeout(resolve, waitTime * 1000, true);
-        });
-      };
-
-      const failedSectors: Sector[] = [];
-      const numParallelRequests = 4;
-
-      while (sectors.length) {
-        const nextBoxes = sectors.splice(0, numParallelRequests);
-        const promises: Promise<boolean>[] = [];
-        for (const bb of nextBoxes) {
-          const url = new URL(endpoint);
-          url.search = new URLSearchParams({
-            ...layer.parameters,
-            x: bb.center.x.toString(),
-            y: bb.center.y.toString(),
-            z: bb.center.z.toString(),
-            size: bb.size.toString(),
-          }).toString();
-          const start = new Date();
-          promises.push(
-            fetch(url.toString()).then((res) => cb(res, bb, start)),
-          );
-        }
-
-        const results = await Promise.all(promises);
-        for (const i in results) {
-          if (!results[i]) {
-            failedSectors.push(nextBoxes[i]);
+          if (point instanceof THREE.Points) {
+            geomGroup.add(point);
+            return true;
           }
+          return false;
+        }).catch((e) => {
+          console.error("Failed to fetch sector",sector,"due to error", e);
+          failedSectors.push(sector);
+          return false;
+        }));
+        if(promises.length >=5) {
+          await Promise.all(promises);
+          promises = [];
         }
       }
 
-      console.log('Failed for boxes', failedSectors);
     };
     fetchSystems(sectors);
     return geomGroup;

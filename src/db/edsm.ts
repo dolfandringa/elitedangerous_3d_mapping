@@ -6,8 +6,8 @@ export const EDSMLayerSchemaVersion=JSONPCDLayerSchemaVersion+1;
 
 export interface SectorUpdateInfo {
     sector_number: number[];
-    updatedDate: Date;
-    lastLoadedDate: Date;
+    updatedDate?: Date;
+    lastLoadedDate?: Date;
 }
 
 export class EDSMLayerDB extends Dexie {

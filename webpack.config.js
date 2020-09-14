@@ -4,6 +4,13 @@ module.exports = {
   // Set debugging source maps to be "inline" for
   // simplicity and ease of use
   devtool: 'inline-source-map',
+  devServer: {
+    contentBase: path.join(__dirname, 'docs'),
+    compress: true,
+    port: 9000,
+    publicPath: '/dist/',
+    filename: 'bundle.js',
+  },
 
   // The application entry point
   entry: './src/index.tsx',
