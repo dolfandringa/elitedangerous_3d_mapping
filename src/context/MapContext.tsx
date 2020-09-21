@@ -32,12 +32,14 @@ const layers: Layer[] = [
         prettyName: 'All systems',
         fileURI: 'all_systems.json',
         defaultOn: true,
+        color: { r: 0.2, g: 0.4, b: 0.8},
     }),
     new EDSMLayer({
         name: 'edsm',
         defaultOn: false,
         prettyName: 'EDSM',
-        parameters: { showCoordinates: 1, showPermit: 1, showId: 1, showPrimaryStar: 1, showInformation: 1 }
+        parameters: { showCoordinates: 1, showPermit: 1, showId: 1, showPrimaryStar: 1, showInformation: 1 },
+        color: { r: 0.8, g: 0.8, b: 0.8},
     }),
 ];
 

@@ -51,7 +51,7 @@ export class LayerDataService {
       const json = await res.json();
       await db.transaction('rw', db.sectors, async () => {
         for(const sector of json) {
-          db.sectors.add(sector);
+          await db.sectors.add(sector);
         }
       });
 
@@ -90,7 +90,7 @@ export class LayerDataService {
           const {
             x, y, z, systemName, ...systemInfo
           } = system;
-          db.systems.add({
+          await db.systems.add({
             x,
             y,
             z,
@@ -152,7 +152,7 @@ export class LayerDataService {
             const sizes = [];
             for (let i = 0; i < numPoints; i += 1) {
               sizes.push(10);
-              colors.push(0.8, 0.8, 0.8);
+              colors.push(layer.color.r, layer.color.g, layer.color.b);
             }
             points.geometry.setAttribute(
               'size',
@@ -174,7 +174,7 @@ export class LayerDataService {
   }
 
 
-  static async updateEDSMSector(sector_number: number[], db: EDSMLayerDB) {
+  static async updateEDSMSector(sector_number: number[], db: EDSMLayerDB): Promise<void> {
     const sector = await db.sectors.where('sector_number').equals(sector_number).first();
     console.log("Checking for EDSM updates for sector", sector);
     const updatedDate = sector.updatedDate;
@@ -185,31 +185,28 @@ export class LayerDataService {
       method: 'HEAD',
     });
     const lastModified = new Date(res.headers.get('Last-Modified'));
+    console.log('updatedDate', updatedDate, 'lastModified', lastModified);
     if (!updatedDate || new Date(updatedDate) < lastModified) {
       res = await fetch(jsonFilename, {
         cache: 'no-cache',
         method: 'GET',
       });
       console.log('importing data');
-      await db.systems.where('sector').equals(sector.sector_number).delete();
       const json = JSON.parse(ungzip(new Uint8Array(await res.arrayBuffer()),
         {to: 'string'}));
-      await db.transaction('rw', db.systems, async () => {
-        console.log('extracted json', json);
+      console.log('extracted json', json);
+      await db.transaction('rw', db.sectors, db.systems, async () => {
+        await db.systems.where('sector').equals(sector.sector_number).delete();
         for (const system of json) {
           const {coords, ...rest} = system;
           const val = {...rest, ...coords};
-          try{
-            db.systems.add(val);
-          } catch(e) {
-            console.error("Problem adding system",system,"due to error",e);
-          }
+          await db.systems.add(val);
         };
+        sector.updatedDate = new Date();
+        await db.sectors.put(sector);
       });
 
       console.log('Finished adding system data');
-      sector.updatedDate = new Date();
-      await db.sectors.put(sector);
     } else {
       console.log('Systems for sector', sector, 'already up-to-date.');
     }
@@ -239,11 +236,13 @@ export class LayerDataService {
   static async syncEDSMLayer(layer: EDSMLayer): Promise<void> {
     console.log('Syncing EDSM Layer');
     const db = new EDSMLayerDB(layer.name); // by instantiating we auto upgrade it.
-    const sectors = await db.sectors.orderBy('lastLoadedDate').reverse();
-    console.log('Got sectors', sectors.toArray());
-    sectors.each((sector) => {
-      LayerDataService.updateEDSMSector(sector.sector_number, db)
-    });
+    const sectors = await db.sectors.orderBy('lastLoadedDate').reverse().toArray();
+    console.log('Gsot sectors', sectors);
+    let promises:Promise<void>[] = [];
+    for(const sector of sectors) {
+      promises.push(LayerDataService.updateEDSMSector(sector.sector_number, db));
+    }
+    await Promise.all(promises);
   }
 
   static createEDSMPoints(
@@ -282,19 +281,19 @@ export class LayerDataService {
     return {
       sector_number: [x, y, z],
       min: {
-        x: (x + LayerDataService.sector0Origin.x) * 1280,
-        y: (y + LayerDataService.sector0Origin.y) * 1280,
-        z: (z + LayerDataService.sector0Origin.z) * 1280,
+        x: x * 1280 + LayerDataService.sector0Origin.x,
+        y: y * 1280 + LayerDataService.sector0Origin.y,
+        z: z * 1280 + LayerDataService.sector0Origin.z,
       },
       max: {
-        x: (x + LayerDataService.sector0Origin.x) * 1280 + 1280,
-        y: (y + LayerDataService.sector0Origin.y) * 1280 + 1280,
-        z: (z + LayerDataService.sector0Origin.z) * 1280 + 1280,
+        x: x * 1280 + LayerDataService.sector0Origin.x + 1280,
+        y: y * 1280 + LayerDataService.sector0Origin.y + 1280,
+        z: z * 1280 + LayerDataService.sector0Origin.z + 1280,
       },
       center: {
-        x: (x + LayerDataService.sector0Origin.x) * 1280 + 640,
-        y: (y + LayerDataService.sector0Origin.y) * 1280 + 640,
-        z: (z + LayerDataService.sector0Origin.z) * 1280 + 640,
+        x: x * 1280 + LayerDataService.sector0Origin.x + 640,
+        y: y * 1280 + LayerDataService.sector0Origin.y + 640,
+        z: z * 1280 + LayerDataService.sector0Origin.z + 640,
       },
     };
   }
@@ -314,7 +313,7 @@ export class LayerDataService {
     console.log('for layer', layer, 'and sphere', sphere);
 
     const sectors: Sector[] = [];
-    const totalMaxRadius = 1000;
+    const totalMaxRadius = 400;
     const material = LayerDataService.getSystemMaterial(8);
     const geomGroup = new THREE.Group();
 
@@ -341,10 +340,14 @@ export class LayerDataService {
     };
     const minSector = LayerDataService.getSectorForCoords(min);
     const maxSector = LayerDataService.getSectorForCoords(max);
+    console.log('min', min);
+    console.log('max', max);
+    console.log('minSector', minSector);
+    console.log('maxSector', maxSector);
     for (let x = minSector.sector_number[0]; x <= maxSector.sector_number[0]; x++) {
       for (let y = minSector.sector_number[1]; y <= maxSector.sector_number[1]; y++) {
         for (let z = minSector.sector_number[2]; z <= maxSector.sector_number[2]; z++) {
-          sectors.push(LayerDataService.getSectorFromNumbers([x, y, x]));
+          sectors.push(LayerDataService.getSectorFromNumbers([x, y, z]));
         }
       }
     }
@@ -356,9 +359,7 @@ export class LayerDataService {
       let failedSectors: Sector[] = [];
       let promises: Promise<boolean>[] = [];
       for (const sector of sectors) {
-        console.log('getting sector', sector);
         promises.push(LayerDataService.getEDSMSector(sector, layer).then((systems: System[]) => {
-          console.log("Got systems", systems);
           const point = LayerDataService.createEDSMPoints(
             systems,
             material,

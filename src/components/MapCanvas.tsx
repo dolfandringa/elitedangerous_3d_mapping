@@ -1,12 +1,10 @@
-import React, { useRef, useLayoutEffect, createRef, useState } from 'react';
-import { TableHeaderCellProps } from 'semantic-ui-react';
+import React, { createRef } from 'react';
 import { difference, xor } from 'lodash';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Layer } from '../types';
 import { LayerDataService } from '../services';
 import { MapContext } from '../context';
-import { PerspectiveCamera } from 'three';
 
 interface MapProps {
 }
@@ -122,7 +120,9 @@ export default class MapCanvas extends React.Component<MapProps, MapState> {
         console.log("Turning on layer", layer);
         const distance = this.camera.position.distanceTo(this.controls.target);
         const geom = await LayerDataService.getLayer(layer, { center: this.controls.target, radius: distance });
+        console.log("Got geom", geom);
         if (geom) {
+            console.log("Adding",geom,"to activeLayersGroup");
             this.activeLayersGroup.add(geom);
             this.activeLayers[layer.name] = { layer, geom };
             let bb: THREE.Box3;
@@ -190,10 +190,9 @@ export default class MapCanvas extends React.Component<MapProps, MapState> {
         this.renderCanvas();
     }
 
-    private renderCanvas() {
+    public renderCanvas() {
         this.camera.updateMatrixWorld();
         this.raycaster.setFromCamera(this.mouse, this.camera);
-        let nebula_name;
         this.renderer.render(this.scene, this.camera);
     }
 
